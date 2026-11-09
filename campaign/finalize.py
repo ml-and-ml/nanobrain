@@ -58,6 +58,12 @@ def collect():
             if result["config"]["model_kwargs"]["checkpoint"] != str(folder / "checkpoint-last.pth"):
                 raise RuntimeError(f"{name}/{task}: evaluation used a different checkpoint")
             evaluation_seconds += result["seconds"]
+        named_regions_checked = None
+        if spec["change"] == "regions":
+            check = json.loads((folder / "checkpoint_check.json").read_text())
+            if not check["finite"] or check["mode"] != "regions" or check["region_count"] != 21:
+                raise RuntimeError(f"{name}: final named-region output check failed")
+            named_regions_checked = check["region_count"]
         rows.append({
             **spec, "commit": state["commit"], "job_id": state["job_id"],
             "config_sha256": state["config_sha256"], "run_dir": str(folder),
@@ -69,6 +75,7 @@ def collect():
             "image_presentations": summary["images"], "num_params": summary["num_params"],
             "peak_memory_gb": summary["peak_memory_gb"], "gpu": summary["gpu"],
             "evaluation_seconds": evaluation_seconds,
+            "named_regions_checked": named_regions_checked,
             "tasks": {t: aggregate[t] for t in TASKS},
         })
     return rows
@@ -92,7 +99,7 @@ def main():
         writer.writerows([t, *[r["tasks"][t]["score"] for r in rows]] for t in TASKS)
     lines = ["# Six anatomical-region experiment results", "",
              "All six models completed full training and all 11 fixed open tasks. **Nothing was submitted to Labless.**", "",
-             "The three changes are independent: learned contextual regions with patch feedback; same-region masked-view consistency; regional visible-patch quotas. Each was applied separately to main and Ryan's pinned model.", "",
+             "The three changes are independent: learned contextual regions with patch feedback; same-region masked-view consistency; regional visible-patch quotas. Each was applied separately to main and Ryan's pinned model. Both final region-token checkpoints also passed a real-input named-region API check, returning 21 finite 768-dimensional vectors with explicit availability masks.", "",
              "| Experiment | Open score | 95% bootstrap interval | Delta vs historical base | Train minutes | Steps |",
              "|---|---:|---|---:|---:|---:|"]
     for r in rows:
