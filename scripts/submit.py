@@ -196,6 +196,7 @@ def github_sign_in() -> tuple[str, str]:
 
 
 if __name__ == "__main__":
+    raise SystemExit("Labless submission is disabled until the user reviews this campaign.")
     parser = argparse.ArgumentParser()
     parser.add_argument("run_dirs", type=Path, nargs="*", help="run output folders, output/NAME")
     parser.add_argument("--dry-run", action="store_true", help="check and save, don't submit")
