@@ -2,6 +2,8 @@
 
 Read-only audit, 2026-11-09. Evaluator checkout verified at commit `8ef7115d519a1d1f13910c1e13bcae331b0ca3ad`. Active experiment worktrees were not changed. The checks below concern the public **dev** split used by the campaign, not the held-out test split. Counts are image-task instances; some images occur in multiple tasks.
 
+Evaluator provenance is verified from the installed distribution's `direct_url.json`, which records the pinned source commit. Its task-result `git` field searches upward from the installed package inside this repository's `.venv`, so it reports the enclosing research repository rather than the evaluator source revision. The separate `cwd_git` field correctly records each experiment worktree (with an abbreviated commit hash); final verification matches that against the full training commit. Training seed is 7338 and the unchanged evaluator seed is 0.
+
 ## Affine availability across the 11 open tasks
 
 For every selected row, the stored `mni_affine_path` was present in the dataset's shard index and mapped to the same shard as its image. One stored affine per task was also read and checked for shape `(4,4)`, finite entries and positive determinant of its linear part. These checks do not establish anatomical registration accuracy for every image.

@@ -51,6 +51,8 @@ def collect():
             result = json.loads((folder / "eval" / f"{task}.json").read_text())
             if result["subset"] != "dev" or result["task"] != task:
                 raise RuntimeError(f"{name}/{task}: wrong evaluation task or subset")
+            if result["config"]["seed"] != 0:
+                raise RuntimeError(f"{name}/{task}: evaluator seed changed")
             # The pinned evaluator stores git --short, while training records the full SHA.
             evaluation_sha = result["cwd_git"]["sha"]
             if len(evaluation_sha) < 7 or not state["commit"].startswith(evaluation_sha) or result["cwd_git"]["dirty"]:
@@ -86,7 +88,8 @@ def main():
     out = ROOT / "research/2026-11-09"
     payload = {"finished_at": dt.datetime.now(dt.UTC).isoformat(),
                "evaluation_commit": MANIFEST["evaluation_commit"],
-               "subset": "dev", "seed": MANIFEST["seed"], "submission": "disabled",
+               "subset": "dev", "training_seed": MANIFEST["seed"], "evaluation_seed": 0,
+               "submission": "disabled",
                "results": rows}
     (out / "six-experiment-results.json").write_text(json.dumps(payload, indent=2) + "\n")
     with (out / "six-experiment-results.csv").open("w") as f:
@@ -116,7 +119,7 @@ def main():
               "|---|---:|---:|---:|---|---|"]
     for r in rows:
         lines.append(f"| {r['name']} | {r['image_presentations']:,} | {r['num_params']:,} | {r['peak_memory_gb']:.2f} | `{r['commit'][:12]}` | {r['job_id']} |")
-    lines += ["", f"Evaluator: `{MANIFEST['evaluation_commit']}`. All runs used seed {MANIFEST['seed']} and one H100. Main retained its 86,713-image list, AdamW and 60-minute schedule; Ryan retained its 253,418-image list, Muon, native-spacing training and 59.5-minute schedule. Different base recipes are not a controlled main-versus-Ryan architecture comparison. Image presentations count sampled volumes, not unique subjects. Raw training losses differ across objectives and should not be ranked across arms.", "",
+    lines += ["", f"Evaluator: `{MANIFEST['evaluation_commit']}`. All runs used training seed {MANIFEST['seed']}, evaluator seed 0, and one H100. Main retained its 86,713-image list, AdamW and 60-minute schedule; Ryan retained its 253,418-image list, Muon, native-spacing training and 59.5-minute schedule. Different base recipes are not a controlled main-versus-Ryan architecture comparison. Image presentations count sampled volumes, not unique subjects. Raw training losses differ across objectives and should not be ranked across arms.", "",
               "The atlas is external anatomical supervision: public Harvard–Oxford probability maps combined with the dataset-provided MNI affine. It is not a subject-specific segmentation, and its eligibility for a public competition submission has not been established. The open benchmark evaluates existing global and dense outputs; it does not directly validate the usefulness or anatomical specificity of the new named region vectors.", "",
               "## Review artifacts", "",
               "- [Protocol and branch folders](../../campaign/README.md)",
