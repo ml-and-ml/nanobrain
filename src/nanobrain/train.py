@@ -463,6 +463,8 @@ def train(
                 num_samples=args.num_samples,
                 with_state=False,
                 spacing=batch.get("spacing"),
+                affine=batch.get("affine"),
+                mni_affine=batch.get("mni_affine"),
                 **fino_kwargs,
                 **nuis_kwargs,
             )
@@ -496,6 +498,8 @@ def train(
                 "tflop_per_sec": metric_logger.meters["tflop/s"].value,
                 "watts": metric_logger.meters["watts"].value,
             }
+            for k, v in getattr(model_without_ddp, "region_stats", {}).items():
+                log_stats[f"region_{k}"] = float(v)
             for k, v in getattr(model_without_ddp, "pool_dec_stats", {}).items():
                 log_stats[f"pool_dec_{k}"] = float(v)
             if fino_kwargs:
@@ -644,7 +648,7 @@ def make_batch_transform(args: DictConfig):
         ]
         if args.native:
             # each image on its own voxel grid
-            out = {key: [sample[key] for sample in batch] for key in ("image", "mask", "spacing")}
+            out = {key: [sample[key] for sample in batch] for key in ("image", "mask", "spacing", "affine", "mni_affine")}
             if "fino" in raw[0]:
                 out["fino"] = torch.from_numpy(np.stack([sample["fino"] for sample in raw]))
             if "nuis" in raw[0]:
@@ -675,7 +679,8 @@ def sample_transform(
     if native:
         # no resampling. forward_native fits the grid_size mm box in the image's own voxels
         spacing = native_spacing(affine, target_spacing)
-        return {"image": image, "mask": mask, "affine": affine, "spacing": spacing}
+        return {"image": image, "mask": mask, "affine": affine, "spacing": spacing,
+                "mni_affine": sample["mni_affine"]}
     image, mask, affine = resample_to_spacing(image, mask, affine, target_spacing)
     image, mask, affine = fit_to_shape(image, mask, affine, grid_size)
     return {"image": image, "mask": mask, "affine": affine}
@@ -686,6 +691,11 @@ def count_batch_flops(args: DictConfig, model: nn.Module, device: torch.device) 
     amp_dtype = getattr(torch, args.amp_dtype)
     images = torch.zeros(args.batch_size, *args.grid_size, device=device)
     masks = torch.ones(args.batch_size, *args.grid_size, device=device)
+    region_kwargs = {}
+    if model.region_mode != "none":
+        region_kwargs["region_weights"] = torch.zeros(
+            args.batch_size, model.coord_grid.shape[1], model.atlas_prior.num_regions, device=device
+        )
     flop_counter = FlopCounterMode(display=False)
     with flop_counter:
         with torch.autocast(device_type=device.type, dtype=amp_dtype, enabled=args.amp):
@@ -696,6 +706,7 @@ def count_batch_flops(args: DictConfig, model: nn.Module, device: torch.device) 
                 num_predict=args.num_predict,
                 num_samples=args.num_samples,
                 with_state=False,
+                **region_kwargs,
             )
         loss.backward()
     model.zero_grad(set_to_none=True)

@@ -44,6 +44,7 @@ class Fomo300kDataset(Dataset):
                 "mask_rle": torch.from_numpy(npz["mask_rle"]),
                 "shape": tuple(npz["shape"].tolist()),
                 "affine": npz["affine"],
+                "mni_affine": npz["mni_affine"],
             }
         if self.meta is not None:
             # numpy, so send_data leaves it on the cpu (no per-step host <-> device sync)

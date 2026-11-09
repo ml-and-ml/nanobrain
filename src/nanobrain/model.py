@@ -11,6 +11,8 @@ from torch import Tensor
 from torch.nn.attention import SDPBackend, sdpa_kernel
 from jaxtyping import Float, Int
 
+from .atlas import AtlasPrior
+from .regions import RegionContext, region_consistency_loss, sample_region_sequences, weighted_region_pool
 from .fino import FinoHeads
 from .nuisdec import NuisanceEmbed
 from .modules import Block, LayerNorm, NativeEmbed, NativeHead, SeparablePosEmbed3D
@@ -99,6 +101,10 @@ class ViTMAE3D(nn.Module):
         # different phases relative to anatomy; token coords get the fractional correction.
         # 0 = off (bitwise the unjittered path)
         grid_jitter_mm: float = 0.0,
+        region_mode: str = "none",
+        region_consistency_weight: float = 0.05,
+        region_coverage_fraction: float = 0.25,
+        atlas_path: str | None = None,
     ):
         super().__init__()
         self.biasfield = biasfield
@@ -256,6 +262,20 @@ class ViTMAE3D(nn.Module):
             self.pool_dec.apply(_init_weights)
             self.pool_mask_token = nn.Parameter(torch.empty(1, 1, decoder_embed_dim))
             nn.init.normal_(self.pool_mask_token, std=0.02)
+
+        # Construct after all baseline parameters, preserving Ryan's seeded initialization.
+        if region_mode not in {"none", "regions", "consistency", "coverage"}:
+            raise ValueError(f"unknown region mode: {region_mode}")
+        self.region_mode = region_mode
+        self.region_consistency_weight = float(region_consistency_weight)
+        self.region_coverage_fraction = float(region_coverage_fraction)
+        self.atlas_prior = AtlasPrior(atlas_path) if region_mode != "none" else None
+        self.region_context = None
+        if region_mode == "regions":
+            # Keep baseline RNG state for subsequent masking and data operations.
+            with torch.random.fork_rng(devices=[]):
+                self.region_context = RegionContext(embed_dim, self.atlas_prior.num_regions, 4)
+        self.region_stats = {}
 
     @classmethod
     def from_config(cls, args: dict) -> "ViTMAE3D":
@@ -416,17 +436,30 @@ class ViTMAE3D(nn.Module):
         fino_meta: Tensor | None = None,
         fino_gamma: float = 0.0,
         nuis_ids: Tensor | None = None,
+        affine: list[np.ndarray] | None = None,
+        mni_affine: list[np.ndarray] | None = None,
+        region_weights: Tensor | None = None,
     ):
         if isinstance(images, list):
             # native resolution batch, images on their own voxel grids
             return self.forward_native(
                 images, mask, spacing, num_visible, num_predict, num_samples, with_state,
                 fino_meta=fino_meta, fino_gamma=fino_gamma, nuis_ids=nuis_ids,
+                affine=affine, mni_affine=mni_affine,
             )
         seqs, order = self.sample_patches(images, mask, num_visible, num_predict, num_samples)
+        visible_weights = None
+        if self.region_mode != "none":
+            if region_weights is None:
+                raise ValueError("region_weights are required for fixed-grid region forward")
+            batch_ids = torch.arange(images.shape[0], device=images.device)[:, None, None]
+            visible_weights = region_weights[batch_ids, order[:, :, :num_visible]].flatten(0, 1)
+        loss, embeds, pred_patches = self.patch_loss(
+            *seqs, with_outputs=True, region_weights=visible_weights,
+            region_batch_size=images.shape[0], region_num_samples=num_samples,
+        )
         if not with_state:
-            return self.patch_loss(*seqs)
-        loss, embeds, pred_patches = self.patch_loss(*seqs, with_outputs=True)
+            return loss
         vis_patches, vis_mask_patches, _, target_patches, target_mask_patches, _ = seqs
         num_predict = target_patches.shape[1]
         B = images.shape[0]
@@ -502,11 +535,17 @@ class ViTMAE3D(nn.Module):
         target_mask_patches: Tensor,
         target_coord: Tensor,
         with_outputs: bool = False,
+        region_weights: Tensor | None = None,
+        region_batch_size: int = 1,
+        region_num_samples: int = 1,
     ):
         # forward's loss from sampled sequences
         vis_mask_patches = vis_mask_patches.to(vis_patches.dtype)
         target_mask_patches = target_mask_patches.to(target_patches.dtype)
         embeds = self.forward_encoder(vis_patches, vis_coord)
+        embeds, region_loss = self.apply_regions(
+            embeds, region_weights, region_batch_size, region_num_samples
+        )
         pred_patches = self.forward_decoder(embeds, target_coord)
         # graft: the v3 loss stack. norm_target z-scores each target sequence; the
         # mse and the gradient penalty run on target_ref, the fg mask weights the mse
@@ -573,6 +612,7 @@ class ViTMAE3D(nn.Module):
             loss = loss + self.level_weight * self.level_loss(
                 embeds[:, self.class_tokens :], vis_patches, vis_mask_patches
             )
+        loss = loss + region_loss
         if with_outputs:
             return loss, embeds, pred_patches
         return loss
@@ -682,6 +722,28 @@ class ViTMAE3D(nn.Module):
         use = (torch.rand(B, 1, 1, 1, device=dev) < float(cfg.get("prob", 0.8))) & (mask > 0)
         return torch.where(use, out, img)
 
+    def apply_regions(self, embeds, weights, batch_size, num_samples):
+        """Apply exactly one regional intervention; inactive modes add no trainable heads."""
+        zero = embeds.sum() * 0.0
+        if self.region_mode == "none":
+            return embeds, zero
+        if weights is None:
+            raise ValueError("anatomical weights are required for region interventions")
+        tokens = embeds[:, self.class_tokens:]
+        self.region_stats = {
+            "available_fraction": (weights.sum(1) >= 1.0).float().mean().detach(),
+        }
+        if self.region_context is not None:
+            tokens, _, _ = self.region_context(tokens, weights)
+            return torch.cat([embeds[:, :self.class_tokens], tokens], 1), zero
+        if self.region_mode == "consistency" and self.training:
+            if num_samples < 2:
+                raise ValueError("region consistency requires at least two independent views")
+            raw = region_consistency_loss(tokens, weights, batch_size, num_samples)
+            self.region_stats["consistency_loss"] = raw.detach()
+            return embeds, self.region_consistency_weight * raw
+        return embeds, zero
+
     def forward_native(
         self,
         images: list[Float[Tensor, "X Y Z"]],
@@ -694,6 +756,9 @@ class ViTMAE3D(nn.Module):
         fino_meta: Tensor | None = None,
         fino_gamma: float = 0.0,
         nuis_ids: Tensor | None = None,
+        affine: list[np.ndarray] | None = None,
+        mni_affine: list[np.ndarray] | None = None,
+        region_weights: Tensor | None = None,
     ):
         # images (float) and masks (bool) on their own voxel grids (sample_transform native), fit
         # here to the grid_size mm box in their voxels. images with the same spacing share one
@@ -701,6 +766,8 @@ class ViTMAE3D(nn.Module):
         # by its in-mask fraction whatever its voxel count; with 1 mm images only this is
         # forward's loss, bitwise
         assert self.native and num_predict is not None
+        if self.region_mode != "none" and (affine is None or mni_affine is None):
+            raise ValueError("native regional training requires affine and mni_affine per scan")
         seq_length = num_visible + num_predict
         token_mm = self.patch_size[0] * self.target_spacing
         groups: dict[tuple, list[int]] = {}
@@ -736,6 +803,7 @@ class ViTMAE3D(nn.Module):
                 shifts = (torch.rand(len(ids), 3) * (nmax + 1)).floor().long() - nmax // 2
                 # anatomy at buffer voxel v + s was at v: token centres move by -s * sp mm
                 part_shift = -(shifts.double() * torch.tensor(sp, dtype=torch.float64)) / token_mm
+            fitted_affines = []
             for jj, ii in enumerate(ids):
                 if jitter:
                     src, dst = shifted_slices(images[ii].shape, box, padded, shifts[jj].tolist())
@@ -743,6 +811,11 @@ class ViTMAE3D(nn.Module):
                     src, dst = fit_slices(images[ii].shape, box)
                 vols[0, jj][dst] = images[ii][src]
                 vols[1, jj][dst] = mask[ii][src]
+                if self.region_mode != "none":
+                    # Buffer index v maps back to original index v + src.start - dst.start.
+                    shift = np.eye(4)
+                    shift[:3, 3] = [a.start - b.start for a, b in zip(src, dst)]
+                    fitted_affines.append(np.asarray(affine[ii]) @ shift)
             if nch == 3:
                 # channel 2: the encoder's input view; channel 0 stays the clean reconstruction target
                 vols[2] = self.biasfield_aug(vols[0], vols[1])
@@ -751,6 +824,23 @@ class ViTMAE3D(nn.Module):
             scores = sequence_scores(vols[1], num_samples, self.min_mask_frac, cube=cube).flatten(0, 1)
             parts.append({"spacing": sp, "patch": patch, "ids": ids, "vols": vols})
             parts[-1]["scores"] = scores
+            if self.region_mode != "none":
+                axes = [(torch.arange(g, device=device) + 0.5) * p - 0.5 for g, p in zip(grid, patch)]
+                voxel_centres = torch.stack(torch.meshgrid(*axes, indexing="ij"), -1).reshape(1, -1, 3)
+                weights = self.atlas_prior.patch_weights(
+                    voxel_centres.expand(len(ids), -1, -1),
+                    torch.as_tensor(np.stack(fitted_affines), device=device, dtype=torch.float32),
+                    torch.as_tensor(np.stack([mni_affine[ii] for ii in ids]), device=device, dtype=torch.float32),
+                    patch_extent=patch,
+                )
+                weights = weights * vols[1].float().mean(-1, keepdim=True)
+                parts[-1]["region_weights"] = weights
+                if self.region_mode == "coverage":
+                    parts[-1]["region_order"] = sample_region_sequences(
+                        vols[1], weights, num_samples, num_visible, seq_length,
+                        min_mask_frac=self.min_mask_frac,
+                        coverage_fraction=self.region_coverage_fraction,
+                    ).flatten(0, 1)
             if jitter:
                 # [b * num_samples, 1, 3] coord offsets in token units, sequence rows image-major
                 parts[-1]["coord_shift"] = (
@@ -776,10 +866,15 @@ class ViTMAE3D(nn.Module):
         orders = scores.argsort(dim=1, stable=True)[:, :seq_length].split(num_rows)
 
         for part, order, num in zip(parts, orders, num_tokens):
+            order = part.pop("region_order", order)
             sp, patch, vols = part["spacing"], part["patch"], part.pop("vols")
             del part["scores"]
             b = len(part["ids"])
             part["order"] = order.unflatten(0, (b, num_samples))
+            if self.region_mode != "none":
+                weights = part.pop("region_weights")
+                batch_ids = torch.arange(b, device=device)[:, None, None]
+                part["vis_region_weights"] = weights[batch_ids, part["order"][..., :num_visible]].flatten(0, 1)
             # images and masks gathered together by flat token ids
             flat_ids = part["order"] + gather_offsets(b, num, device, len(vols))
             patches = vols.flatten(0, 2).index_select(0, flat_ids.flatten())
@@ -815,6 +910,10 @@ class ViTMAE3D(nn.Module):
             embeds, mid = self.encode_tokens_mid(cat("embeds"), cat("vis_coord"))
         else:
             embeds = self.encode_tokens(cat("embeds"), cat("vis_coord"))
+        embeds, region_loss = self.apply_regions(
+            embeds, cat("vis_region_weights") if self.region_mode != "none" else None,
+            len(images), num_samples,
+        )
         nuis = None
         if self.decoder_nuis is not None and nuis_ids is not None:
             nuis = self.nuis_vectors(nuis_ids, parts, num_samples, device)
@@ -863,7 +962,7 @@ class ViTMAE3D(nn.Module):
                 mz = mv[:, :, :, 1:] * mv[:, :, :, :-1]
                 grad_num += [(mx * dx).sum(), (my * dy).sum(), (mz * dz).sum()]
                 grad_den += [mx.sum(), my.sum(), mz.sum()]
-        loss = flat_cat(losses).sum() / flat_cat(wts).sum()
+        loss = flat_cat(losses).sum() / flat_cat(wts).sum() + region_loss
         self.pool_dec_stats = {}
         if pool_losses:
             pool_loss = flat_cat(pool_losses).sum() / flat_cat(wts).sum()
@@ -935,6 +1034,8 @@ class ViTMAE3D(nn.Module):
         # the fixed-shape transformer parts. per-spacing tokenization, embedding and head stay eager
         self.encode_tokens = torch.compile(self.encode_tokens, **kwargs)
         self.decode_features = torch.compile(self.decode_features, **kwargs)
+        if self.region_mode in {"regions", "consistency"}:
+            self.apply_regions = torch.compile(self.apply_regions, **kwargs)
         if self.pool_dec is not None:
             self.encode_tokens_mid = torch.compile(self.encode_tokens_mid, **kwargs)
             self.decode_pooled = torch.compile(self.decode_pooled, **kwargs)
@@ -955,7 +1056,12 @@ class ViTMAE3D(nn.Module):
         mask = torch.from_numpy(np.asarray(sample["brain_mask"].dataobj) > 0)
         affine = sample["image"].affine
         image, mask, affine = crop_to_mask(image, mask, affine)
-        return {"values": image[mask], "mask": mask, "affine": affine}
+        out = {"values": image[mask], "mask": mask, "affine": affine}
+        if self.region_mode != "none":
+            if sample.get("mni_affine") is None:
+                raise ValueError("regional embeddings require the scan's world-to-MNI affine")
+            out["mni_affine"] = sample["mni_affine"]
+        return out
 
     def transform_cuda(self, sample: dict[str, Tensor]) -> dict:
         values = sample["values"]
@@ -966,7 +1072,10 @@ class ViTMAE3D(nn.Module):
         image, mask, affine = reorient_to_ras(image, mask, affine)
         image, mask, affine = resample_to_spacing(image, mask, affine, self.target_spacing)
         image, mask, affine = fit_to_shape(image, mask, affine, self.grid_size)
-        return {"image": image, "mask": mask, "affine": affine}
+        out = {"image": image, "mask": mask, "affine": affine}
+        if "mni_affine" in sample:
+            out["mni_affine"] = sample["mni_affine"]
+        return out
 
     @torch.inference_mode()
     def forward_embeddings(
@@ -979,6 +1088,7 @@ class ViTMAE3D(nn.Module):
         outputs = []
         for sample in samples:
             sample = {
+                **sample,
                 "values": sample["values"].to(device),
                 "mask": sample["mask"].to(device),
                 "affine": sample["affine"],
@@ -992,6 +1102,23 @@ class ViTMAE3D(nn.Module):
                 torch.autocast(device.type, dtype=torch.bfloat16, enabled=device.type == "cuda"),
             ):
                 tokens = self.forward_encoder(patches[:, in_mask], self.coord_grid[:, in_mask])
+                region_embeds = region_available = None
+                if self.region_mode != "none":
+                    centres = self.coord_grid[:, in_mask].float() * self.patch_size[0] + (self.patch_size[0] - 1) / 2
+                    weights = self.atlas_prior.patch_weights(
+                        centres,
+                        torch.as_tensor(np.asarray(sample["affine"]), device=device, dtype=torch.float32)[None],
+                        torch.as_tensor(np.asarray(sample["mni_affine"]), device=device, dtype=torch.float32)[None],
+                        patch_extent=self.patch_size,
+                    )
+                    mask_fraction = patchify3d(sample["mask"][None], self.patch_size[0]).float().mean(-1)
+                    weights = weights * mask_fraction[:, in_mask, None]
+                    patch_tokens = tokens[:, self.class_tokens:]
+                    if self.region_context is not None:
+                        patch_tokens, region_embeds, region_available = self.region_context(patch_tokens, weights)
+                        tokens = torch.cat([tokens[:, :self.class_tokens], patch_tokens], 1)
+                    else:
+                        region_embeds, region_available = weighted_region_pool(patch_tokens, weights)
             tokens = tokens[0, self.class_tokens :].float()
 
             output = EmbeddingOutput(
@@ -1000,6 +1127,10 @@ class ViTMAE3D(nn.Module):
                 dense_affine=None,
                 dense_mask=None,
             )
+            if region_embeds is not None:
+                output["region_names"] = self.atlas_prior.region_names
+                output["region_embeddings"] = region_embeds[0].float()
+                output["region_available"] = region_available[0]
             if return_dense:
                 dense = tokens.new_zeros(len(in_mask), self.embed_dim)
                 dense[in_mask] = tokens
@@ -1008,6 +1139,18 @@ class ViTMAE3D(nn.Module):
                 output["dense_mask"] = in_mask.reshape(patch_grid_size)
             outputs.append(output)
         return outputs
+
+
+    @torch.inference_mode()
+    def forward_region_embeddings(self, samples: list[dict]) -> list[dict]:
+        """Named contextual vectors from samples already processed by transform()."""
+        if self.region_mode == "none":
+            raise ValueError("This checkpoint has no anatomical region integration")
+        return [
+            {"names": result["region_names"], "embeddings": result["region_embeddings"],
+             "available": result["region_available"], "global_embedding": result["global_embedding"]}
+            for result in self.forward_embeddings(samples)
+        ]
 
 
 @register_model
