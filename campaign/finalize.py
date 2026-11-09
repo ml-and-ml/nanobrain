@@ -97,7 +97,7 @@ def main():
     for r in rows:
         lines.append(f"| {r['name']} | {r['image_presentations']:,} | {r['num_params']:,} | {r['peak_memory_gb']:.2f} | `{r['commit'][:12]}` | {r['job_id']} |")
     lines += ["", f"Evaluator: `{MANIFEST['evaluation_commit']}`. All runs used seed {MANIFEST['seed']} and one H100. Main retained its 86,713-image list, AdamW and 60-minute schedule; Ryan retained its 253,418-image list, Muon, native-spacing training and 59.5-minute schedule. Different base recipes are not a controlled main-versus-Ryan architecture comparison. Image presentations count sampled volumes, not unique subjects. Raw training losses differ across objectives and should not be ranked across arms.", "",
-              "The atlas is external anatomical supervision: public Harvard–Oxford probability maps combined with the dataset-provided MNI affine. It is not a subject-specific segmentation, and its eligibility for a public competition submission has not been established.", "",
+              "The atlas is external anatomical supervision: public Harvard–Oxford probability maps combined with the dataset-provided MNI affine. It is not a subject-specific segmentation, and its eligibility for a public competition submission has not been established. The open benchmark evaluates existing global and dense outputs; it does not directly validate the usefulness or anatomical specificity of the new named region vectors.", "",
               "## Review artifacts", "",
               "- [Protocol and branch folders](../../campaign/README.md)",
               "- [Named contextual embedding API](../../campaign/REGION_EMBEDDINGS.md)",
