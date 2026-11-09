@@ -51,7 +51,9 @@ def collect():
             result = json.loads((folder / "eval" / f"{task}.json").read_text())
             if result["subset"] != "dev" or result["task"] != task:
                 raise RuntimeError(f"{name}/{task}: wrong evaluation task or subset")
-            if result["cwd_git"]["sha"] != state["commit"] or result["cwd_git"]["dirty"]:
+            # The pinned evaluator stores git --short, while training records the full SHA.
+            evaluation_sha = result["cwd_git"]["sha"]
+            if len(evaluation_sha) < 7 or not state["commit"].startswith(evaluation_sha) or result["cwd_git"]["dirty"]:
                 raise RuntimeError(f"{name}/{task}: evaluation source mismatch")
             if result["config"]["model_kwargs"]["checkpoint"] != str(folder / "checkpoint-last.pth"):
                 raise RuntimeError(f"{name}/{task}: evaluation used a different checkpoint")
