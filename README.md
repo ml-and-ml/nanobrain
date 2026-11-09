@@ -27,17 +27,16 @@ uv run hf download medarc/brainmarks-smri --repo-type dataset --local-dir data
 echo "BRAINMARKS_SMRI_DATA=data" >> .env
 ```
 
-## Train, evaluate, submit
+## Train and evaluate locally
 
 ```sh
-uv run python scripts/submit.py --login-only
-sbatch scripts/train.sbatch smoke notes="smoke test" time_limit=5
-sbatch scripts/train.sbatch my-run notes="what changed and why"
+python3 campaign/report.py
+# For the six fixed variants, use the launch protocol in campaign/README.md.
 ```
 
-`train.sbatch` trains for 1 hour (`time_limit`), then evaluates the last checkpoint on the brainmarks-smri `open` tasks and submits it, except smoke tests.
+The six variant folders are separate Git worktrees with their own committed `experiment.yaml`. `campaign/run.py` trains each recipe, then evaluates its last checkpoint on all brainmarks-smri `open` tasks. Checkpoints and full evaluation artifacts stay under `/data/hassan/nanobrain/anatomical-regions-20261109/`.
 
-`submit.py` posts the score and your code to [labless](https://labless.dev/nano-projects/nanobrain-smri). Sign in once with `--login-only` before your first job. Remember to push your branch so others can check out your commit.
+Labless submission is disabled in this checkout and all six experiment branches until the user reviews the results. The [upstream challenge](https://labless.dev/nano-projects/nanobrain-smri) remains the source of its competition rules; atlas eligibility has not been established.
 
 ## Rules
 
