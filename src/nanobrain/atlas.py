@@ -131,4 +131,3 @@ class AtlasPrior(nn.Module):
                 flat = (i * ATLAS_SHAPE[1] + j) * ATLAS_SHAPE[2] + k
                 weights.add_(self.probabilities[flat].float() * valid[..., None])
             return weights.mul_(1.0 / (100 * len(self.quadrature)))
-

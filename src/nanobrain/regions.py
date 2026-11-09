@@ -15,7 +15,8 @@ def weighted_region_pool(tokens: Tensor, weights: Tensor, min_mass: float = 0.25
     weights = weights.float().clamp_min(0)
     mass = weights.sum(dim=1)
     available = mass >= min_mass
-    pooled = torch.einsum("bnr,bnd->brd", weights, tokens.float())
+    with torch.autocast(device_type=tokens.device.type, enabled=False):
+        pooled = torch.einsum("bnr,bnd->brd", weights, tokens.float())
     pooled = pooled / mass.clamp_min(1e-6).unsqueeze(-1)
     return pooled * available.unsqueeze(-1), available
 
@@ -126,7 +127,8 @@ def region_consistency_loss(
             std_penalty = F.relu(1.0 - (var + 1e-4).sqrt()).mean(dim=-1)
             variance = variance + (std_penalty * enough).sum() / enough.sum().clamp_min(1)
             by_region = centered.transpose(0, 1)
-            gram = by_region @ by_region.transpose(1, 2)
+            with torch.autocast(device_type=tokens.device.type, enabled=False):
+                gram = by_region @ by_region.transpose(1, 2)
             cov_norm = gram.square().sum(dim=(-1, -2)) / (count - 1).clamp_min(1).square()
             off_diagonal = (cov_norm - var.square().sum(dim=-1)).clamp_min(0) / view.shape[-1]
             covariance = covariance + (off_diagonal * enough).sum() / enough.sum().clamp_min(1)
