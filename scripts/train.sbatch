@@ -40,7 +40,4 @@ uv run --no-sync python -m brainmarks_smri vit_mae_3d "${TASK_GROUP}" \
     output_dir="${RUN_DIR}" \
     name=eval
 
-# Submit to labless, except smoke tests.
-if [[ "${NAME}" != smoke* ]]; then
-    uv run --no-sync python scripts/submit.py "${RUN_DIR}"
-fi
+# Labless submission disabled for the six-run review campaign.

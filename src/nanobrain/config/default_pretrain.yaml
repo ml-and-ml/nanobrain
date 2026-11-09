@@ -26,6 +26,9 @@ num_samples: 2
 
 # Model (ViT-B encoder).
 model_kwargs:
+  region_mode: coverage
+  region_consistency_weight: 0.05
+  region_coverage_fraction: 0.25
   depth: 12
   embed_dim: 768
   num_heads: 12
