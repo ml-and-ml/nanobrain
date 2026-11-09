@@ -29,7 +29,7 @@ from nanobrain.data import (
     reorient_to_ras,
     resample_to_spacing,
 )
-from nanobrain.model import ViTMAE3D, patches_to_volume
+from nanobrain.model import ViTMAE3D, patches_to_volume, patchify3d
 from nanobrain.visualization import plot_mask_pred
 
 logger = logging.getLogger()
@@ -89,6 +89,8 @@ def main(args: DictConfig):
 
     # model
     model = ViTMAE3D.from_config(args)
+    if model.region_mode == "consistency" and args.num_samples < 2:
+        raise ValueError("Consistency training requires at least two masked views")
     model.to(device)
     logger.info(f"model:\n{model}")
     num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -156,7 +158,7 @@ def main(args: DictConfig):
         prefetch_factor=args.prefetch_factor if args.num_workers > 0 else None,
         worker_init_fn=ignore_sigterm,
     )
-    batch_transform = make_batch_transform(args)
+    batch_transform = make_batch_transform(args, model)
 
     # on SIGTERM (e.g. preemption) finish the current step, save and exit. resumes when relaunched
     stop_event = threading.Event()
@@ -291,6 +293,7 @@ def train(
                 num_predict=args.num_predict,
                 num_samples=args.num_samples,
                 with_state=False,
+                region_weights=batch.get("region_weights"),
             )
 
         loss_for_log = loss.detach()
@@ -338,7 +341,7 @@ def train(
         # not on stop by signal, just save and exit
         is_plot_step = args.plot_period and (step % args.plot_period == 0 or done)
         if num_examples and is_plot_step:
-            plot_paths = plot_examples(args, model, images, masks, step, amp_dtype, device)
+            plot_paths = plot_examples(args, model, images, masks, step, amp_dtype, device, batch.get("region_weights"))
             if args.wandb:
                 wandb.log(
                     {f"train/{name}": wandb.Image(str(path)) for name, path in plot_paths.items()},
@@ -375,7 +378,7 @@ def make_lr_schedule(
     return np.concatenate([warmup, stable, decay])
 
 
-def make_batch_transform(args: DictConfig):
+def make_batch_transform(args: DictConfig, model: ViTMAE3D):
     def fn(batch: list[dict[str, Tensor]]) -> dict[str, Tensor]:
         batch = [
             sample_transform(
@@ -388,7 +391,15 @@ def make_batch_transform(args: DictConfig):
         ]
         images = torch.stack([sample["image"] for sample in batch])
         masks = torch.stack([sample["mask"] for sample in batch])
-        return {"image": images, "mask": masks}
+        result = {"image": images, "mask": masks}
+        if model.atlas_prior is not None:
+            p = args.patch_size
+            centres = (model.coord_grid.float() * p + (p - 1) / 2).expand(len(batch), -1, -1)
+            affine = torch.as_tensor(np.stack([sample["affine"] for sample in batch]), device=images.device, dtype=torch.float32)
+            mni_affine = torch.as_tensor(np.stack([sample["mni_affine"] for sample in batch]), device=images.device, dtype=torch.float32)
+            weights = model.atlas_prior.patch_weights(centres, affine, mni_affine, patch_extent=(p, p, p))
+            result["region_weights"] = weights * patchify3d(masks.float(), p).mean(dim=-1, keepdim=True)
+        return result
 
     return fn
 
@@ -408,7 +419,7 @@ def sample_transform(
     image, mask, affine = reorient_to_ras(image, mask, sample["affine"])
     image, mask, affine = resample_to_spacing(image, mask, affine, target_spacing)
     image, mask, affine = fit_to_shape(image, mask, affine, grid_size)
-    return {"image": image, "mask": mask, "affine": affine}
+    return {"image": image, "mask": mask, "affine": affine, "mni_affine": sample["mni_affine"]}
 
 
 def count_batch_flops(args: DictConfig, model: nn.Module, device: torch.device) -> float:
@@ -416,6 +427,9 @@ def count_batch_flops(args: DictConfig, model: nn.Module, device: torch.device) 
     amp_dtype = getattr(torch, args.amp_dtype)
     images = torch.zeros(args.batch_size, *args.grid_size, device=device)
     masks = torch.ones(args.batch_size, *args.grid_size, device=device)
+    region_weights = None
+    if model.atlas_prior is not None:
+        region_weights = torch.ones(args.batch_size, model.coord_grid.shape[1], model.atlas_prior.num_regions, device=device)
     flop_counter = FlopCounterMode(display=False)
     with flop_counter:
         with torch.autocast(device_type=device.type, dtype=amp_dtype, enabled=args.amp):
@@ -426,6 +440,7 @@ def count_batch_flops(args: DictConfig, model: nn.Module, device: torch.device) 
                 num_predict=args.num_predict,
                 num_samples=args.num_samples,
                 with_state=False,
+                region_weights=region_weights,
             )
         loss.backward()
     model.zero_grad(set_to_none=True)
@@ -440,6 +455,7 @@ def plot_examples(
     step: int,
     amp_dtype: torch.dtype,
     device: torch.device,
+    region_weights: Tensor | None = None,
 ) -> dict[str, Path]:
     num_examples = args.plot_nrow * args.plot_ncol
     images = images[:num_examples]
@@ -458,6 +474,7 @@ def plot_examples(
             num_visible=args.num_visible,
             num_predict=args.plot_num_predict,
             num_samples=1,
+            region_weights=region_weights[:num_examples] if region_weights is not None else None,
         )
     model.train()
 

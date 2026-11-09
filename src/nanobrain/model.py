@@ -9,6 +9,8 @@ from torch.nn.attention import SDPBackend, sdpa_kernel
 from jaxtyping import Float, Int
 
 from .modules import Block, LayerNorm, SeparablePosEmbed3D
+from .atlas import AtlasPrior
+from .regions import RegionContext, region_consistency_loss, sample_region_sequences
 from .data import (
     crop_to_mask,
     fit_to_shape,
@@ -38,6 +40,9 @@ class ViTMAE3D(nn.Module):
         class_tokens: int = 1,
         drop_path_rate: float = 0.0,
         clip_quantiles: tuple[float, float] = (0.005, 0.995),
+        region_mode: str = "none",
+        region_consistency_weight: float = 0.05,
+        region_coverage_fraction: float = 0.25,
     ):
         super().__init__()
         self.grid_size = grid_size
@@ -48,6 +53,12 @@ class ViTMAE3D(nn.Module):
         self.class_tokens = class_tokens
         patch_grid_size = tuple(size // patch_size for size in grid_size)
         self.clip_quantiles = clip_quantiles
+        if region_mode not in {"none", "regions", "consistency", "coverage"}:
+            raise ValueError(f"Unknown region mode: {region_mode}")
+        self.region_mode = region_mode
+        self.region_consistency_weight = region_consistency_weight
+        self.region_coverage_fraction = region_coverage_fraction
+        self.atlas_prior = AtlasPrior() if region_mode != "none" else None
 
         patch_dim = patch_size**3
         self.register_buffer("coord_grid", make_coord_grid(grid_size, patch_size), persistent=False)
@@ -99,6 +110,11 @@ class ViTMAE3D(nn.Module):
         self.decoder_norm = LayerNorm(decoder_embed_dim)
         self.decoder_head = nn.Linear(decoder_embed_dim, patch_dim)
         self.init_weights()
+        # Preserve the original backbone initialization and its RNG consumption.
+        with torch.random.fork_rng(devices=[]):
+            self.region_context = (
+                RegionContext(embed_dim, self.atlas_prior.num_regions) if region_mode == "regions" else None
+            )
 
     @classmethod
     def from_config(cls, args: dict) -> "ViTMAE3D":
@@ -125,7 +141,9 @@ class ViTMAE3D(nn.Module):
         self,
         patches: Float[Tensor, "B N P"],
         coord: Float[Tensor, "B N 3"],
-    ) -> Float[Tensor, "B R+N D"]:
+        region_weights: Tensor | None = None,
+        return_regions: bool = False,
+    ):
         B, N, P = patches.shape
         assert coord.shape == (B, N, 3)
 
@@ -138,6 +156,16 @@ class ViTMAE3D(nn.Module):
         for block in self.blocks:
             x = block(x)
         x = self.norm(x)
+        region_embeddings, region_available = None, None
+        if self.region_context is not None:
+            if region_weights is None:
+                raise ValueError("Anatomical region weights are required for the region-token encoder")
+            patch_tokens, region_embeddings, region_available = self.region_context(
+                x[:, self.class_tokens :], region_weights
+            )
+            x = torch.cat([x[:, : self.class_tokens], patch_tokens], dim=1)
+        if return_regions:
+            return x, region_embeddings, region_available
         return x
 
     def forward_decoder(
@@ -172,6 +200,7 @@ class ViTMAE3D(nn.Module):
         num_predict: int | None = None,
         num_samples: int = 1,
         with_state: bool = True,
+        region_weights: Tensor | None = None,
     ):
         B = images.shape[0]
         assert tuple(images.shape[1:]) == tuple(self.grid_size)
@@ -183,7 +212,15 @@ class ViTMAE3D(nn.Module):
         # sample num_samples sequences per image, then flatten them into the batch
         # num_predict None predicts all remaining patches (dense decoding)
         seq_length = None if num_predict is None else num_visible + num_predict
-        order = sample_sequences(mask_patches, num_samples, seq_length)
+        if self.region_mode != "none" and region_weights is None:
+            raise ValueError("Anatomical region weights required; preserve mni_affine in preprocessing")
+        if self.region_mode == "coverage":
+            order = sample_region_sequences(
+                mask_patches, region_weights, num_samples, num_visible, seq_length,
+                coverage_fraction=self.region_coverage_fraction,
+            )
+        else:
+            order = sample_sequences(mask_patches, num_samples, seq_length)
         num_predict = order.shape[2] - num_visible
         batch_ids = torch.arange(B, device=images.device)[:, None, None]
         patches = patches[batch_ids, order].flatten(0, 1)
@@ -196,10 +233,19 @@ class ViTMAE3D(nn.Module):
         )
         vis_coord, target_coord = torch.split(coord, [num_visible, num_predict], dim=1)
 
-        embeds = self.forward_encoder(vis_patches, vis_coord)
+        visible_region_weights = None
+        if region_weights is not None:
+            visible_region_weights = region_weights[batch_ids, order[:, :, :num_visible]].flatten(0, 1)
+        embeds = self.forward_encoder(vis_patches, vis_coord, region_weights=visible_region_weights)
         pred_patches = self.forward_decoder(embeds, target_coord)
         loss = F.mse_loss(pred_patches, target_patches, reduction="none")
-        loss = (target_mask_patches * loss).sum() / target_mask_patches.sum()
+        loss = (target_mask_patches * loss).sum() / target_mask_patches.sum().clamp_min(1)
+        consistency = loss.new_zeros(())
+        if self.region_mode == "consistency":
+            consistency = region_consistency_loss(
+                embeds[:, self.class_tokens :], visible_region_weights, B, num_samples
+            )
+            loss = loss + self.region_consistency_weight * consistency
 
         if not with_state:
             return loss
@@ -218,6 +264,7 @@ class ViTMAE3D(nn.Module):
             "vis_ids": vis_ids,
             "target_ids": target_ids,
             "image_ids": image_ids,
+            "region_consistency_loss": consistency.detach(),
         }
         return loss, state
 
@@ -231,7 +278,10 @@ class ViTMAE3D(nn.Module):
         mask = torch.from_numpy(np.asarray(sample["brain_mask"].dataobj) > 0)
         affine = sample["image"].affine
         image, mask, affine = crop_to_mask(image, mask, affine)
-        return {"values": image[mask], "mask": mask, "affine": affine}
+        mni_affine = sample.get("mni_affine")
+        if self.region_mode != "none" and mni_affine is None:
+            raise ValueError("Named regions require the image-world to MNI affine from ImageInput")
+        return {"values": image[mask], "mask": mask, "affine": affine, "mni_affine": mni_affine}
 
     def transform_cuda(self, sample: dict[str, Tensor]) -> dict:
         values = sample["values"]
@@ -242,7 +292,7 @@ class ViTMAE3D(nn.Module):
         image, mask, affine = reorient_to_ras(image, mask, affine)
         image, mask, affine = resample_to_spacing(image, mask, affine, self.target_spacing)
         image, mask, affine = fit_to_shape(image, mask, affine, self.grid_size)
-        return {"image": image, "mask": mask, "affine": affine}
+        return {"image": image, "mask": mask, "affine": affine, "mni_affine": sample.get("mni_affine")}
 
     @torch.inference_mode()
     def forward_embeddings(
@@ -258,16 +308,20 @@ class ViTMAE3D(nn.Module):
                 "values": sample["values"].to(device),
                 "mask": sample["mask"].to(device),
                 "affine": sample["affine"],
+                "mni_affine": sample.get("mni_affine"),
             }
             sample = self.transform_cuda(sample)
             patches = patchify3d(sample["image"][None], self.patch_size[0])
             in_mask = (patchify3d(sample["mask"][None], self.patch_size[0]) > 0).any(dim=2)[0]
             # cudnn attention builds a new graph (~45 ms) for each new sequence length
             with (
-                sdpa_kernel([SDPBackend.FLASH_ATTENTION, SDPBackend.EFFICIENT_ATTENTION]),
+                sdpa_kernel([SDPBackend.FLASH_ATTENTION, SDPBackend.EFFICIENT_ATTENTION] if device.type == "cuda" else [SDPBackend.MATH]),
                 torch.autocast(device.type, dtype=torch.bfloat16, enabled=device.type == "cuda"),
             ):
-                tokens = self.forward_encoder(patches[:, in_mask], self.coord_grid[:, in_mask])
+                weights = self.sample_region_weights(sample)[:, in_mask] if self.atlas_prior is not None else None
+                tokens = self.forward_encoder(
+                    patches[:, in_mask], self.coord_grid[:, in_mask], region_weights=weights
+                )
             tokens = tokens[0, self.class_tokens :].float()
 
             output = EmbeddingOutput(
@@ -283,6 +337,46 @@ class ViTMAE3D(nn.Module):
                 output["dense_affine"] = sample["affine"]
                 output["dense_mask"] = in_mask.reshape(patch_grid_size)
             outputs.append(output)
+        return outputs
+
+
+    def sample_region_weights(self, sample: dict) -> Tensor:
+        """Atlas membership using final-grid voxels -> native RAS -> MNI RAS."""
+        if sample.get("mni_affine") is None:
+            raise ValueError("mni_affine is required for anatomically named embeddings")
+        p = self.patch_size[0]
+        centres = self.coord_grid.float() * p + (p - 1) / 2
+        device = centres.device
+        affine = torch.as_tensor(sample["affine"], device=device, dtype=torch.float32)[None]
+        mni_affine = torch.as_tensor(sample["mni_affine"], device=device, dtype=torch.float32)[None]
+        weights = self.atlas_prior.patch_weights(centres, affine, mni_affine, patch_extent=(p, p, p))
+        brain_fraction = patchify3d(sample["mask"][None].float(), p).mean(dim=-1)
+        return weights * brain_fraction[:, :, None]
+
+    @torch.inference_mode()
+    def forward_region_embeddings(self, samples: list[dict]) -> list[dict]:
+        """Named contextual embeddings without changing the Brainmarks contract.
+
+        Input samples are produced by transform(). Output carries names and a
+        boolean availability mask: unavailable regions have zero embeddings.
+        """
+        if self.region_mode != "regions":
+            raise ValueError("Contextual region queries exist only in the regions experiment")
+        outputs = []
+        device = self.coord_grid.device
+        for original in samples:
+            sample = self.transform_cuda({**original, "values": original["values"].to(device),
+                                          "mask": original["mask"].to(device)})
+            patches = patchify3d(sample["image"][None], self.patch_size[0])
+            in_mask = patchify3d(sample["mask"][None], self.patch_size[0]).any(dim=2)[0]
+            weights = self.sample_region_weights(sample)[:, in_mask]
+            with torch.autocast(device.type, dtype=torch.bfloat16, enabled=device.type == "cuda"):
+                tokens, regions, available = self.forward_encoder(
+                    patches[:, in_mask], self.coord_grid[:, in_mask], weights, return_regions=True
+                )
+            outputs.append({"names": self.atlas_prior.region_names,
+                            "embeddings": regions[0].float(), "available": available[0],
+                            "global_embedding": tokens[0, self.class_tokens :].float().mean(dim=0)})
         return outputs
 
 
