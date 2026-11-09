@@ -14,7 +14,13 @@ export BRAINMARKS_SMRI_DATA=/data/brainmarks-smri
 export WANDB_MODE=disabled
 export OMP_NUM_THREADS=1
 export MKL_NUM_THREADS=1
-for variant in main-regions ryan-regions; do
+variants=("$@")
+if (( ${#variants[@]} == 0 )); then
+    variants=(main-regions ryan-regions)
+fi
+for variant in "${variants[@]}"; do
+    # The saved training filelist is relative to its own experiment worktree.
+    cd "${REPO}/branches/${variant}"
     PYTHONPATH="${REPO}/branches/${variant}/src" "${REPO}/.venv/bin/python" \
         "${REPO}/campaign/check_checkpoint.py" \
         "/data/hassan/nanobrain/anatomical-regions-20261109/${variant}/checkpoint-last.pth"
