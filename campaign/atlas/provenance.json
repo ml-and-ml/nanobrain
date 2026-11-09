@@ -1,0 +1,69 @@
+{
+  "atlas": "Harvard-Oxford Subcortical Structural Atlas",
+  "source_url": "https://www.nitrc.org/frs/download.php/9902/HarvardOxford.tgz",
+  "atlas_space": "MNI152NLin6Asym",
+  "resolution_mm": 2,
+  "probabilities": "uint8 percentages, preserved from FSL/Nilearn source",
+  "archive_sha256": "43f3cf29ea8b019d15247428c9a26569045f0637d5c40d144da821a6c324cfcf",
+  "nifti_sha256": "f4201571883bb83e06828e37826b50fd9190f118e6593c906ccbe615b9564321",
+  "xml_sha256": "576f825bcc51e2afaa5411aef85858091fcaf823e27415f9f263fbca4743ba8b",
+  "asset_sha256": "1a2bd7c02dacb2a4c224b075c05fc2a9284a02e8d1c273f733784ee5052b953c",
+  "shape": [
+    91,
+    109,
+    91,
+    21
+  ],
+  "affine": [
+    [
+      -2.0,
+      0.0,
+      0.0,
+      90.0
+    ],
+    [
+      0.0,
+      2.0,
+      0.0,
+      -126.0
+    ],
+    [
+      0.0,
+      0.0,
+      2.0,
+      -72.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "region_names": [
+    "left_cerebral_white_matter",
+    "left_cerebral_cortex",
+    "left_lateral_ventricle",
+    "left_thalamus",
+    "left_caudate",
+    "left_putamen",
+    "left_pallidum",
+    "brain_stem",
+    "left_hippocampus",
+    "left_amygdala",
+    "left_accumbens",
+    "right_cerebral_white_matter",
+    "right_cerebral_cortex",
+    "right_lateral_ventricle",
+    "right_thalamus",
+    "right_caudate",
+    "right_putamen",
+    "right_pallidum",
+    "right_hippocampus",
+    "right_amygdala",
+    "right_accumbens"
+  ],
+  "asset_bytes": 433558,
+  "atlas_eligibility": "Not assumed Labless eligible; review external atlas prior rules before submitting.",
+  "registration": "Reuse dataset-provided ANTs 12-DOF image-world-to-MNI152NLin6Asym affine. No new registration and no neural segmentation teacher."
+}

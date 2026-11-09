@@ -1,0 +1,16 @@
+{
+  "campaign": "anatomical-regions-20261109",
+  "seed": 7338,
+  "data_root": "/data/brainmarks-smri",
+  "output_root": "/data/hassan/nanobrain/anatomical-regions-20261109",
+  "evaluation_commit": "8ef7115d519a1d1f13910c1e13bcae331b0ca3ad",
+  "submission_policy": "disabled-until-user-review",
+  "experiments": [
+    {"name": "main-regions", "base": "main", "change": "regions", "base_commit": "440fc92a0f949c5874db64ec6491f397bcbda37c", "reference_score": 0.47273299323282175},
+    {"name": "main-consistency", "base": "main", "change": "consistency", "base_commit": "440fc92a0f949c5874db64ec6491f397bcbda37c", "reference_score": 0.47273299323282175},
+    {"name": "main-coverage", "base": "main", "change": "coverage", "base_commit": "440fc92a0f949c5874db64ec6491f397bcbda37c", "reference_score": 0.47273299323282175},
+    {"name": "ryan-regions", "base": "ryan", "change": "regions", "base_commit": "60df47644a9a74736daefa6ef9adbd4ea240dc8b", "reference_score": 0.5494727418391886},
+    {"name": "ryan-consistency", "base": "ryan", "change": "consistency", "base_commit": "60df47644a9a74736daefa6ef9adbd4ea240dc8b", "reference_score": 0.5494727418391886},
+    {"name": "ryan-coverage", "base": "ryan", "change": "coverage", "base_commit": "60df47644a9a74736daefa6ef9adbd4ea240dc8b", "reference_score": 0.5494727418391886}
+  ]
+}

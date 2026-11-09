@@ -1,0 +1,29 @@
+{
+  "device": "cpu",
+  "cpu_threads": 1,
+  "repetitions": 3,
+  "atlas_lookup": "eight probability samples per patch; no registration",
+  "measurements": [
+    {
+      "batch": 1,
+      "patches": 17280,
+      "regions": 21,
+      "median_seconds": 0.010124909225851297,
+      "output_bytes": 1451520
+    },
+    {
+      "batch": 32,
+      "patches": 512,
+      "regions": 21,
+      "median_seconds": 0.009321041870862246,
+      "output_bytes": 1376256
+    },
+    {
+      "batch": 32,
+      "patches": 17280,
+      "regions": 21,
+      "median_seconds": 0.6994873052462935,
+      "output_bytes": 46448640
+    }
+  ]
+}

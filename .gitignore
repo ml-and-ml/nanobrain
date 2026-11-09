@@ -50,3 +50,9 @@ slurms/
 # Subdirectories
 /third_party/
 /dev/
+
+# Isolated experiment worktrees and campaign runtime
+/branches/
+/campaign/logs/
+/campaign/state/
+/campaign/results/

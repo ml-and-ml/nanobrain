@@ -1,0 +1,94 @@
+{
+  "data": "FOMO300K pretraining filelist only; deterministic evenly spaced subset",
+  "samples_checked": 16,
+  "geometry_roundtrip_failures": 0,
+  "template_atlas_probability_inside_subject_brain_mask": {
+    "left_cerebral_white_matter": {
+      "median": 0.9994361996650696,
+      "minimum": 0.9199345111846924
+    },
+    "left_cerebral_cortex": {
+      "median": 0.9705591797828674,
+      "minimum": 0.8448132276535034
+    },
+    "left_lateral_ventricle": {
+      "median": 1.0,
+      "minimum": 0.9963818788528442
+    },
+    "left_thalamus": {
+      "median": 1.0,
+      "minimum": 0.9996523857116699
+    },
+    "left_caudate": {
+      "median": 1.0,
+      "minimum": 0.9995313286781311
+    },
+    "left_putamen": {
+      "median": 1.0,
+      "minimum": 1.0
+    },
+    "left_pallidum": {
+      "median": 1.0,
+      "minimum": 1.0
+    },
+    "brain_stem": {
+      "median": 0.993546724319458,
+      "minimum": 0.6824970245361328
+    },
+    "left_hippocampus": {
+      "median": 1.0,
+      "minimum": 0.9984858632087708
+    },
+    "left_amygdala": {
+      "median": 1.0,
+      "minimum": 0.9945869445800781
+    },
+    "left_accumbens": {
+      "median": 1.0,
+      "minimum": 1.0
+    },
+    "right_cerebral_white_matter": {
+      "median": 0.9993252158164978,
+      "minimum": 0.9488618969917297
+    },
+    "right_cerebral_cortex": {
+      "median": 0.9716691970825195,
+      "minimum": 0.8800986409187317
+    },
+    "right_lateral_ventricle": {
+      "median": 1.0,
+      "minimum": 0.9968849420547485
+    },
+    "right_thalamus": {
+      "median": 1.0,
+      "minimum": 0.9993002414703369
+    },
+    "right_caudate": {
+      "median": 1.0,
+      "minimum": 0.9997344613075256
+    },
+    "right_putamen": {
+      "median": 1.0,
+      "minimum": 0.999950647354126
+    },
+    "right_pallidum": {
+      "median": 1.0,
+      "minimum": 1.0
+    },
+    "right_hippocampus": {
+      "median": 1.0,
+      "minimum": 0.9975686073303223
+    },
+    "right_amygdala": {
+      "median": 1.0,
+      "minimum": 0.9844995141029358
+    },
+    "right_accumbens": {
+      "median": 1.0,
+      "minimum": 0.9997735619544983
+    }
+  },
+  "all_region_mass_fraction_median": 1.0,
+  "sample_read_and_cpu_geometry_seconds_median": 0.05852833087556064,
+  "interpretation": "Brain-mask containment and geometry checks only. This does not validate hippocampus segmentation accuracy or individual anatomy."
+}
