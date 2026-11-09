@@ -4,7 +4,7 @@
   "data_root": "/data/brainmarks-smri",
   "output_root": "/data/hassan/nanobrain/anatomical-regions-20261109",
   "evaluation_commit": "8ef7115d519a1d1f13910c1e13bcae331b0ca3ad",
-  "submission_policy": "disabled-until-user-review",
+  "submission_policy": "user-reviewed-and-authorized-all-six",
   "experiments": [
     {"name": "main-regions", "base": "main", "change": "regions", "base_commit": "440fc92a0f949c5874db64ec6491f397bcbda37c", "reference_score": 0.47273299323282175},
     {"name": "main-consistency", "base": "main", "change": "consistency", "base_commit": "440fc92a0f949c5874db64ec6491f397bcbda37c", "reference_score": 0.47273299323282175},

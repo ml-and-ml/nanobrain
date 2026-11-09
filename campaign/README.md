@@ -4,6 +4,8 @@ User instruction: implement each of three proposals separately on upstream main 
 
 **Completed 2026-11-09:** all six full training runs and all 66 task evaluations finished. Both trained region-token checkpoints passed named/global/dense inference checks. See the [final scores, interpretation and provenance](../research/2026-11-09/six-experiment-results.md). Region tokens had the highest point score among the three variants on each base; only main + regions exceeded its historical reference. No submission was made.
 
+**Submission authorization:** after reviewing these results, the user instructed "Submit" and then "Submit all". All six exact experiment branches are published at [ml-and-ml/nanobrain](https://github.com/ml-and-ml/nanobrain). `submit_reviewed.py` prepares the six audited payloads, including explicit external-atlas disclosure and supplemental reproduction instructions. Run `.venv/bin/python campaign/submit_reviewed.py --submit` after Labless authentication; it records receipts and checks deterministic run IDs before retrying. This authorization applies to these six reviewed runs. The frozen training branches and their original submission guards remain unchanged.
+
 ## Isolated branches and directories
 
 Each folder is a Git worktree with its own experiment branch and full training configuration:

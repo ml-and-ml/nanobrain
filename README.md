@@ -1,6 +1,6 @@
 # nanobrain
 
-**Six experiments completed:** [final results and interpretation](research/2026-11-09/six-experiment-results.md), [branch layout and protocol](campaign/README.md), and [named region embeddings](campaign/REGION_EMBEDDINGS.md). Each of three changes was trained and evaluated independently on main and Ryan's pinned model in six folders under `branches/`. Labless submission is disabled pending user review.
+**Six experiments completed:** [final results and interpretation](research/2026-11-09/six-experiment-results.md), [branch layout and protocol](campaign/README.md), and [named region embeddings](campaign/REGION_EMBEDDINGS.md). Each of three changes was trained and evaluated independently on main and Ryan's pinned model in six folders under `branches/`. The user has reviewed and authorized all six for Labless submission through `campaign/submit_reviewed.py`.
 
 A collaborative (or competitive) challenge to find the best recipe for training brain MRI foundation models. Inspired by [nanoGPT](https://github.com/karpathy/nanogpt), [modded-nanogpt](https://github.com/kellerjordan/modded-nanogpt) and our sibling project [nanopath](https://github.com/MedARC-AI/nanopath).
 
@@ -36,7 +36,7 @@ python3 campaign/report.py
 
 The six variant folders are separate Git worktrees with their own committed `experiment.yaml`. `campaign/run.py` trains each recipe, then evaluates its last checkpoint on all brainmarks-smri `open` tasks. Checkpoints and full evaluation artifacts stay under `/data/hassan/nanobrain/anatomical-regions-20261109/`.
 
-Labless submission is disabled in this checkout and all six experiment branches until the user reviews the results. The [upstream challenge](https://labless.dev/nano-projects/nanobrain-smri) remains the source of its competition rules; atlas eligibility has not been established.
+The six reviewed runs can be submitted through `.venv/bin/python campaign/submit_reviewed.py --submit` after Labless authentication. Original launchers and frozen experiment branches retain their submission guards. The [upstream challenge](https://labless.dev/nano-projects/nanobrain-smri) remains the source of its competition rules; the submission notes disclose external atlas use and leave eligibility to maintainers.
 
 ## Rules
 
