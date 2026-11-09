@@ -1,10 +1,11 @@
 {
-  "finished_at": "2026-11-09T07:20:31.086657+00:00",
+  "finished_at": "2026-11-09T14:00:13.703350+00:00",
   "evaluation_commit": "8ef7115d519a1d1f13910c1e13bcae331b0ca3ad",
   "subset": "dev",
   "training_seed": 7338,
   "evaluation_seed": 0,
-  "submission": "disabled",
+  "submission": "6/6 submitted; unvalidated",
+  "submission_receipts": "labless-submissions.json",
   "results": [
     {
       "name": "main-regions",

@@ -86,10 +86,19 @@ def collect():
 def main():
     rows = collect()
     out = ROOT / "research/2026-11-09"
+    receipt_file = out / "labless-submissions.json"
+    submissions = json.loads(receipt_file.read_text())["runs"] if receipt_file.exists() else []
+    by_name = {r["name"]: r for r in rows}
+    for receipt in submissions:
+        row = by_name[receipt["experiment"]]
+        if receipt["commit"] != row["commit"] or receipt["score"] != row["open_score"]:
+            raise RuntimeError("Submission receipt does not match reviewed results")
+    submission_status = f"{len(submissions)}/6 submitted; unvalidated" if submissions else "not submitted"
     payload = {"finished_at": dt.datetime.now(dt.UTC).isoformat(),
                "evaluation_commit": MANIFEST["evaluation_commit"],
                "subset": "dev", "training_seed": MANIFEST["seed"], "evaluation_seed": 0,
-               "submission": "disabled",
+               "submission": submission_status,
+               "submission_receipts": "labless-submissions.json" if submissions else None,
                "results": rows}
     (out / "six-experiment-results.json").write_text(json.dumps(payload, indent=2) + "\n")
     with (out / "six-experiment-results.csv").open("w") as f:
@@ -101,12 +110,15 @@ def main():
         writer.writerow(["task", *[r["name"] for r in rows]])
         writer.writerows([t, *[r["tasks"][t]["score"] for r in rows]] for t in TASKS)
     lines = ["# Six anatomical-region experiment results", "",
-             "All six models completed full training and all 11 fixed open tasks on the dev split. **Nothing was submitted to Labless.**", "",
+             "All six models completed full training and all 11 fixed open tasks on the dev split. "
+             + (f"**{len(submissions)}/6 runs submitted to Labless after user review; unvalidated.**" if submissions else "**Nothing was submitted to Labless.**"), "",
              "The three changes are independent: learned contextual regions with patch feedback; same-region masked-view consistency; regional visible-patch quotas. Each was applied separately to main and Ryan's pinned model. Both final region-token checkpoints also passed a real-input named-region API check, returning 21 finite 768-dimensional vectors with explicit availability masks.", "",
              "| Experiment | Open score | 95% bootstrap interval | Delta vs historical base | Train minutes | Steps |",
              "|---|---:|---|---:|---:|---:|"]
     for r in rows:
         lines.append(f"| {r['name']} | {r['open_score']:.6f} | {r['open_low']:.6f}–{r['open_high']:.6f} | {r['delta_vs_historical_reference']:+.6f} | {r['training_seconds']/60:.2f} | {r['training_steps']:,} |")
+    if submissions:
+        lines += ["", "Labless entries: " + "; ".join(f"[{r['experiment']}]({r['url']})" for r in submissions) + ". External atlas use is explicitly disclosed; acceptance is not maintainer validation or a ruling on atlas eligibility."]
     lines += ["", "Main's historical reference is 0.472733; Ryan's is 0.549473. These are published single-seed references, not freshly rerun controls. The intervals are the evaluator's sample-bootstrap intervals; they do not measure training-seed variation or establish a significant gain over the historical reference. Scores are normalized task metrics, not accuracy percentages.", "",
               "## Interpretation", "",
               "Learned contextual region tokens achieved the highest point score among the three new variants on both bases. Main + regions scored 0.486434, up 0.013701 against historical main, and led 9 of 11 tasks among the main variants. It is the only arm above its historical reference. Ryan + regions was the best of the six at 0.534519, but all three Ryan variants fell below Ryan's historical 0.549473. Paired sample-bootstrap comparisons among the Ryan variants all include zero; the point ranking is not evidence of a reliable difference.", "",

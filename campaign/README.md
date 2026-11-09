@@ -2,9 +2,11 @@
 
 User instruction: implement each of three proposals separately on upstream main and Ryan's pinned `fbc1-s7338`; obtain six evaluations; **do not submit anything to Labless until user review**.
 
-**Completed 2026-11-09:** all six full training runs and all 66 task evaluations finished. Both trained region-token checkpoints passed named/global/dense inference checks. See the [final scores, interpretation and provenance](../research/2026-11-09/six-experiment-results.md). Region tokens had the highest point score among the three variants on each base; only main + regions exceeded its historical reference. No submission was made.
+**Completed 2026-11-09:** all six full training runs and all 66 task evaluations finished. Both trained region-token checkpoints passed named/global/dense inference checks. See the [final scores, Labless links and provenance](../research/2026-11-09/six-experiment-results.md). Region tokens had the highest point score among the three variants on each base; only main + regions exceeded its historical reference. All six were subsequently submitted after user review; Labless accepted them as unvalidated. [Submission receipts](../research/2026-11-09/labless-submissions.json).
 
 **Submission authorization:** after reviewing these results, the user instructed "Submit" and then "Submit all". All six exact experiment branches are published at [ml-and-ml/nanobrain](https://github.com/ml-and-ml/nanobrain). `submit_reviewed.py` prepares the six audited payloads, including explicit external-atlas disclosure and supplemental reproduction instructions. Run `.venv/bin/python campaign/submit_reviewed.py --submit` after Labless authentication; it records receipts and checks deterministic run IDs before retrying. This authorization applies to these six reviewed runs. The frozen training branches and their original submission guards remain unchanged.
+
+All six public entries were independently read back: contributor, every metric, exact source commit and uploaded source/config contents match the local records. All are unvalidated, with empty validation errors. Labless's generated clone command currently names upstream MedARC despite correct fork metadata; for reproduction, clone `https://github.com/ml-and-ml/nanobrain.git` and check out the exact experiment branch/commit recorded in the receipt. The atlas setup and dependency links in each submission resolve to pinned public files.
 
 ## Isolated branches and directories
 
@@ -42,6 +44,6 @@ Each base retains its own full file list, architecture, optimizer, seed 7338 and
 
 The shared environment is `.venv/`; `environment.txt` records its packages. Each process uses its worktree's `src/` via `PYTHONPATH`. Its source snapshot and committed config identify the code actually trained.
 
-Labless submission is absent from the campaign launcher, removed from each branch's standard training launcher, and blocked at the direct submission CLI. No authentication or submission commands are used.
+Labless submission is absent from the training campaign launcher, removed from each branch's standard training launcher, and blocked at the original direct submission CLI. After user review, the separate `submit_reviewed.py` helper authenticated and submitted the six completed runs. Labless allows only specific source paths: exact source/config snapshots are uploaded, while supplemental atlas setup and dependencies are linked to pinned public Git commits.
 
 The reference scores in the results table are historical single-seed results (main 0.472733; Ryan 0.549473), not freshly rerun controls. Report failures and per-task tradeoffs honestly; do not relabel a smoke test or incomplete evaluation as one of the six requested results.

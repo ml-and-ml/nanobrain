@@ -1,6 +1,6 @@
 # Six anatomical-region experiment results
 
-All six models completed full training and all 11 fixed open tasks on the dev split. **Nothing was submitted to Labless.**
+All six models completed full training and all 11 fixed open tasks on the dev split. **6/6 runs submitted to Labless after user review; unvalidated.**
 
 The three changes are independent: learned contextual regions with patch feedback; same-region masked-view consistency; regional visible-patch quotas. Each was applied separately to main and Ryan's pinned model. Both final region-token checkpoints also passed a real-input named-region API check, returning 21 finite 768-dimensional vectors with explicit availability masks.
 
@@ -12,6 +12,8 @@ The three changes are independent: learned contextual regions with patch feedbac
 | ryan-regions | 0.534519 | 0.503827–0.564630 | -0.014954 | 59.55 | 17,187 |
 | ryan-consistency | 0.532381 | 0.503091–0.562110 | -0.017092 | 59.55 | 17,965 |
 | ryan-coverage | 0.526744 | 0.495695–0.556632 | -0.022729 | 59.55 | 13,627 |
+
+Labless entries: [main-regions](https://labless.dev/runs/run_sub_5e1b3cac07); [main-consistency](https://labless.dev/runs/run_sub_ef49d05552); [main-coverage](https://labless.dev/runs/run_sub_83c7bf395a); [ryan-regions](https://labless.dev/runs/run_sub_54475d8b42); [ryan-consistency](https://labless.dev/runs/run_sub_7e4297b6e0); [ryan-coverage](https://labless.dev/runs/run_sub_dfe6917480). External atlas use is explicitly disclosed; acceptance is not maintainer validation or a ruling on atlas eligibility.
 
 Main's historical reference is 0.472733; Ryan's is 0.549473. These are published single-seed references, not freshly rerun controls. The intervals are the evaluator's sample-bootstrap intervals; they do not measure training-seed variation or establish a significant gain over the historical reference. Scores are normalized task metrics, not accuracy percentages.
 

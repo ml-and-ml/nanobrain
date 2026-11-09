@@ -1,6 +1,6 @@
 # nanobrain
 
-**Six experiments completed:** [final results and interpretation](research/2026-11-09/six-experiment-results.md), [branch layout and protocol](campaign/README.md), and [named region embeddings](campaign/REGION_EMBEDDINGS.md). Each of three changes was trained and evaluated independently on main and Ryan's pinned model in six folders under `branches/`. The user has reviewed and authorized all six for Labless submission through `campaign/submit_reviewed.py`.
+**Six experiments completed and submitted:** [results and Labless links](research/2026-11-09/six-experiment-results.md), [branch layout and protocol](campaign/README.md), and [named region embeddings](campaign/REGION_EMBEDDINGS.md). Each of three changes was trained and evaluated independently on main and Ryan's pinned model in six folders under `branches/`. All six were submitted after user review and are unvalidated, with external atlas use disclosed.
 
 A collaborative (or competitive) challenge to find the best recipe for training brain MRI foundation models. Inspired by [nanoGPT](https://github.com/karpathy/nanogpt), [modded-nanogpt](https://github.com/kellerjordan/modded-nanogpt) and our sibling project [nanopath](https://github.com/MedARC-AI/nanopath).
 
@@ -62,4 +62,4 @@ The baseline is a 3D ViT-B masked autoencoder trained on 87K MRI brain volumes (
 | [`default_pretrain.yaml`](src/nanobrain/config/default_pretrain.yaml) | default config |
 | [`select_images.py`](src/nanobrain/select_images.py) | pretraining image selection, writes `fomo300k_images.txt` |
 | [`train.sbatch`](scripts/train.sbatch) | train, then evaluate |
-| [`submit.py`](scripts/submit.py) | leaderboard submission blocked pending user review |
+| [`submit_reviewed.py`](campaign/submit_reviewed.py) | submit the six reviewed runs and record receipts |

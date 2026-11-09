@@ -1,0 +1,108 @@
+{
+  "authorization": "User: Submit; clarified: Submit all, after reviewing six completed results.",
+  "repository": "https://github.com/ml-and-ml/nanobrain.git",
+  "runs": [
+    {
+      "experiment": "main-regions",
+      "submission_id": "5e1b3cac07",
+      "run_id": "run_sub_5e1b3cac07",
+      "url": "https://labless.dev/runs/run_sub_5e1b3cac07",
+      "score": 0.48643448903088765,
+      "commit": "46715080735c5dda93ef2827f33296866d02d321",
+      "submitted_at": "2026-11-09T13:59:14.862212+00:00",
+      "response": {
+        "ok": true,
+        "run_id": "run_sub_5e1b3cac07",
+        "validation": "unvalidated",
+        "verdict": "promising",
+        "metric": 0.48643448903088765,
+        "submission_id": "5e1b3cac07"
+      }
+    },
+    {
+      "experiment": "main-consistency",
+      "submission_id": "ef49d05552",
+      "run_id": "run_sub_ef49d05552",
+      "url": "https://labless.dev/runs/run_sub_ef49d05552",
+      "score": 0.4671135724768161,
+      "commit": "130d1aabf04754bcbc39d9a37ef94df86a04c2a0",
+      "submitted_at": "2026-11-09T13:59:16.116062+00:00",
+      "response": {
+        "ok": true,
+        "run_id": "run_sub_ef49d05552",
+        "validation": "unvalidated",
+        "verdict": "promising",
+        "metric": 0.4671135724768161,
+        "submission_id": "ef49d05552"
+      }
+    },
+    {
+      "experiment": "main-coverage",
+      "submission_id": "83c7bf395a",
+      "run_id": "run_sub_83c7bf395a",
+      "url": "https://labless.dev/runs/run_sub_83c7bf395a",
+      "score": 0.4612728164219384,
+      "commit": "695148c74e9093554c0895c9d8b39820f8583791",
+      "submitted_at": "2026-11-09T13:59:17.265978+00:00",
+      "response": {
+        "ok": true,
+        "run_id": "run_sub_83c7bf395a",
+        "validation": "unvalidated",
+        "verdict": "promising",
+        "metric": 0.4612728164219384,
+        "submission_id": "83c7bf395a"
+      }
+    },
+    {
+      "experiment": "ryan-regions",
+      "submission_id": "54475d8b42",
+      "run_id": "run_sub_54475d8b42",
+      "url": "https://labless.dev/runs/run_sub_54475d8b42",
+      "score": 0.5345191338415111,
+      "commit": "f65cb9583236245ec54efd0b2c7e9be7f1a9439b",
+      "submitted_at": "2026-11-09T13:59:18.418475+00:00",
+      "response": {
+        "ok": true,
+        "run_id": "run_sub_54475d8b42",
+        "validation": "unvalidated",
+        "verdict": "promising",
+        "metric": 0.5345191338415111,
+        "submission_id": "54475d8b42"
+      }
+    },
+    {
+      "experiment": "ryan-consistency",
+      "submission_id": "7e4297b6e0",
+      "run_id": "run_sub_7e4297b6e0",
+      "url": "https://labless.dev/runs/run_sub_7e4297b6e0",
+      "score": 0.5323812047907105,
+      "commit": "770c81ab6acb7a18c3149003542789667d08063a",
+      "submitted_at": "2026-11-09T13:59:19.698565+00:00",
+      "response": {
+        "ok": true,
+        "run_id": "run_sub_7e4297b6e0",
+        "validation": "unvalidated",
+        "verdict": "promising",
+        "metric": 0.5323812047907105,
+        "submission_id": "7e4297b6e0"
+      }
+    },
+    {
+      "experiment": "ryan-coverage",
+      "submission_id": "dfe6917480",
+      "run_id": "run_sub_dfe6917480",
+      "url": "https://labless.dev/runs/run_sub_dfe6917480",
+      "score": 0.5267439105104841,
+      "commit": "2f3db395ab71904ce2d7d2d900a7ac629d877a9d",
+      "submitted_at": "2026-11-09T13:59:20.994010+00:00",
+      "response": {
+        "ok": true,
+        "run_id": "run_sub_dfe6917480",
+        "validation": "unvalidated",
+        "verdict": "promising",
+        "metric": 0.5267439105104841,
+        "submission_id": "dfe6917480"
+      }
+    }
+  ]
+}
