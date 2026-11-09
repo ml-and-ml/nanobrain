@@ -46,6 +46,16 @@ def collect():
             raise RuntimeError(f"{name}: aggregate is not the fixed 11-task mean")
         if any(not math.isfinite(aggregate[t]["score"]) for t in TASKS):
             raise RuntimeError(f"{name}: nonfinite task score")
+        evaluation_seconds = 0.0
+        for task in TASKS:
+            result = json.loads((folder / "eval" / f"{task}.json").read_text())
+            if result["subset"] != "dev" or result["task"] != task:
+                raise RuntimeError(f"{name}/{task}: wrong evaluation task or subset")
+            if result["cwd_git"]["sha"] != state["commit"] or result["cwd_git"]["dirty"]:
+                raise RuntimeError(f"{name}/{task}: evaluation source mismatch")
+            if result["config"]["model_kwargs"]["checkpoint"] != str(folder / "checkpoint-last.pth"):
+                raise RuntimeError(f"{name}/{task}: evaluation used a different checkpoint")
+            evaluation_seconds += result["seconds"]
         rows.append({
             **spec, "commit": state["commit"], "job_id": state["job_id"],
             "config_sha256": state["config_sha256"], "run_dir": str(folder),
@@ -56,6 +66,7 @@ def collect():
             "training_seconds": summary["wall_seconds"], "training_steps": summary["step"],
             "image_presentations": summary["images"], "num_params": summary["num_params"],
             "peak_memory_gb": summary["peak_memory_gb"], "gpu": summary["gpu"],
+            "evaluation_seconds": evaluation_seconds,
             "tasks": {t: aggregate[t] for t in TASKS},
         })
     return rows
