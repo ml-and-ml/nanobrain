@@ -1,5 +1,7 @@
 # nanobrain
 
+**Local six-experiment campaign:** [branch layout and protocol](campaign/README.md), [live results](campaign/results/results.md), and [named region embeddings](campaign/REGION_EMBEDDINGS.md). The three changes are tested independently on main and Ryan's pinned model in six folders under `branches/`. Labless submission is disabled pending user review.
+
 A collaborative (or competitive) challenge to find the best recipe for training brain MRI foundation models. Inspired by [nanoGPT](https://github.com/karpathy/nanogpt), [modded-nanogpt](https://github.com/kellerjordan/modded-nanogpt) and our sibling project [nanopath](https://github.com/MedARC-AI/nanopath).
 
 **Want to get involved? Join us in the [MedARC Discord](https://discord.gg/tVR4TWnRM9) (find us in #neuro-fm)!**
