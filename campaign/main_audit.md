@@ -42,10 +42,33 @@ Actual GPU step-5,000 plot cycles are verified for all three arms. Each wrote sa
 | main-consistency | 5,500 | 3 | 258,297–383,033 |
 | main-coverage | 5,200 | 3 | 257,557–380,344 |
 
-Artifacts are under `/data/hassan/nanobrain/anatomical-regions-20261109/<arm>/plots/mae_{sag,cor,ax}_0005000.png`. This closes the smoke-test gap caused by its `compile=false` and `plot_period=0` overrides. Full evaluation scores were still pending when this audit was written.
+Artifacts are under `/data/hassan/nanobrain/anatomical-regions-20261109/<arm>/plots/mae_{sag,cor,ax}_0005000.png`. This closes the smoke-test gap caused by its `compile=false` and `plot_period=0` overrides. Final evaluation validation and results are recorded below.
 
 ## Runner review
 
 `run.py` rejects dirty worktrees, verifies the pinned evaluator installation, records source/config identities, and checks completed training before evaluation. The fixed evaluator emits the `open` aggregate only when all required tasks are present; the campaign verifies that aggregate before reporting completion. Checkpoint diagnostics reconstruct the real image using its stored scale and affines. Neither the campaign runner nor the branch launchers submit to Labless.
 
 Operational note: the four-hour job allocation includes training plus evaluation. If an evaluation exceeds the remaining allocation, it requires a monitored evaluation-only retry; Slurm's `--requeue` flag alone does not guarantee automatic retry after a wall-time limit.
+
+
+## Final evaluation validation
+
+Completed at 2026-11-09T07:16:17.237137+00:00. All three main arms completed their full wall-budget training and all 11 fixed open tasks. An independent audit verified all **33 task JSON files**: task identity, `subset=dev`, exact intended checkpoint, clean experiment `cwd_git` source SHA, and finite metrics. All three aggregate scores equal the unweighted mean of the 11 finite task scores. Training summaries report `done=true`, no signal termination, and the expected clean source commits. The experiment-config SHA-256 values still match the launch records; the worktrees remain clean.
+
+Sample counts, fold counts, and evaluated subject/session/fold assignments match exactly across the three arms for every task. These identities were compared internally and are not reproduced in this report.
+
+| Arm | Open score | 95% sample-bootstrap interval | Delta vs historical main | Training steps | Reported wall seconds |
+|---|---:|---|---:|---:|---:|
+| main-regions | 0.486434489 | 0.457609–0.515164 | +0.013701496 | 20,364 | 3606.40 |
+| main-consistency | 0.467113572 | 0.437940–0.497189 | -0.005619421 | 20,166 | 3606.52 |
+| main-coverage | 0.461272816 | 0.432793–0.490943 | -0.011460177 | 20,443 | 3606.18 |
+
+The learned-regions arm has the highest point estimate among the main variants and leads 9 of 11 individual tasks. Consistency leads OpenBHB age (R² 0.846486 versus 0.813191 for regions), while coverage leads IXI age (R² 0.831960 versus 0.828211 for regions). Regions leads all six classification tasks and all three segmentation tasks. Its enhancing-tumor Dice is 0.617050, versus 0.603514 for consistency and 0.598750 for coverage; SOOP lesion Dice is 0.566313, versus 0.525479 and 0.557092. Whole-tumor Dice is very close between regions and consistency: 0.828624 versus 0.827744, with coverage at 0.823240. These are single-seed task tradeoffs, not evidence of significant superiority.
+
+### Recovered allocator warnings
+
+The main-regions and main-consistency whole-tumor evaluations emitted CUDA allocator allocation warnings at 07:06:27 UTC and 07:10:12 UTC respectively, each while requesting approximately 4.50 GB. Both continued fitting subsequent folds and finished successfully. Read-only inspection of the pinned evaluator's `probes.py` and `logistic.py` found no OOM handler that drops subjects, shrinks the protocol, or changes the probe after an allocation warning. A propagated exception would be caught at the task boundary in `run.py`, mark the task failed, and produce a nonzero evaluator exit; that did not occur.
+
+All three final whole-tumor files contain exactly **500 evaluated subjects, five folds of 100 subjects, five selected hyperparameter records, and 500 finite subject-level Dice scores**. Subject/session/fold assignments match exactly across arms. Thus the recovered warnings did not result in missing evaluated subjects or a changed fixed evaluation protocol. The original deterministic negative-patch subsampling in the pinned logistic probe remains unchanged; it is unrelated to these allocation warnings.
+
+No source edits, evaluation changes, relaunches, or Labless submissions were made during this audit.

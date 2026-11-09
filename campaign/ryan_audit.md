@@ -1,6 +1,6 @@
 # Ryan integration and launch audit
 
-Audit date: 2026-11-09. Full runs are still training; this is an implementation/compatibility audit, not benchmark results.
+Audit date: 2026-11-09. All three Ryan training runs and their full 11-task open evaluations completed. Early observations below are retained as a launch record; final results are appended at the end.
 
 ## Frozen source
 
@@ -34,3 +34,38 @@ At smoke step 20, the fraction of regions with at least one weighted patch equiv
 A later full-training log snapshot showed approximately 168 images/s for region context (step 1400), 168 images/s for consistency (step 1100), and 131 images/s for coverage (step 600), with stable memory around 24–26 GB. Coverage is approximately 22% slower at this snapshot; its eager per-region, per-spacing sampling loop adds launch overhead. These are live observations on different batches, not a controlled throughput benchmark. Source remains frozen; no optimization or hyperparameter changes were introduced after launch.
 
 Regional consistency was active and finite (raw loss about 0.190 at the noted step, outer weight 0.05). Training losses are not comparable measures of downstream quality across objectives. The final 11-task open benchmark scores are required for judging all six proposals.
+
+
+## Final results: all three completed
+
+Each run completed all 11 open/dev tasks, covering 4,083 image-task samples. All reported task metrics, aggregate scores and 1,000 aggregate bootstrap replicates are finite. Every task records its expected clean model-source commit. No Labless submission occurred.
+
+| Variant | Open score | 95% bootstrap interval | Global score | Segmentation score | Steps | Images |
+| --- | ---: | --- | ---: | ---: | ---: | ---: |
+| Regions | 0.534519 | [0.503827, 0.564630] | 0.458016 | 0.738527 | 17,187 | 549,984 |
+| Consistency | 0.532381 | [0.503091, 0.562110] | 0.454424 | 0.740267 | 17,965 | 574,880 |
+| Coverage | 0.526744 | [0.495695, 0.556632] | 0.448579 | 0.735184 | 13,627 | 436,064 |
+
+Training wall times were 3,573.19, 3,572.93 and 3,573.22 seconds respectively, including final checkpoint overhead. Coverage processed about 24% fewer images than consistency within the same configured time limit. Region-context processed about 4.3% fewer images than consistency. Checkpoints, training summaries and task-level JSON files live under `/data/hassan/nanobrain/anatomical-regions-20261109/ryan-{regions,consistency,coverage}/`; final score artifacts are `eval/aggregate.json`.
+
+Regions has the highest observed Ryan aggregate and global score; consistency has the highest observed segmentation score. Their task tradeoffs are:
+
+- Regions has the highest point estimate on ABIDE diagnosis, ADHD diagnosis, CNP diagnosis, SOOP lesion Dice and UPenn one-year survival.
+- Consistency has the highest point estimate on both age tasks, IDH status and both BraTS segmentation tasks. Its whole-tumor Dice is 0.865428 versus 0.857661 for regions; its IDH AUROC is 0.878336 versus 0.857437.
+- Coverage has the highest point estimate only on SOOP poor-mRS outcome, by a very small margin: AUROC 0.739761 versus 0.739554 for regions. Improved regional sampling availability did not yield the highest overall benchmark score in this run.
+
+The evaluator uses fixed paired bootstrap samples across models. Paired open-score differences are:
+
+| Comparison | Point difference | 95% paired bootstrap interval |
+| --- | ---: | --- |
+| Regions − consistency | +0.002138 | [−0.005778, +0.009149] |
+| Regions − coverage | +0.007775 | [−0.001225, +0.016397] |
+| Consistency − coverage | +0.005637 | [−0.003473, +0.014997] |
+
+Every interval includes zero. These are single-training-seed results; evaluation bootstrap intervals do not measure training-seed variation. The point ranking does not establish a reliable performance separation.
+
+### Evaluation provenance detail
+
+Installed Brainmarks metadata pins `8ef7115d519a1d1f13910c1e13bcae331b0ca3ad`; all 42 installed Python/YAML source/config files were additionally compared byte-for-byte with that pinned checkout and matched. The task JSON's generic `git` field resolves to the parent nanobrain repository because the installed package resides inside its `.venv`; it should not be read as the evaluator source revision. The task JSON's `cwd_git` field correctly records each frozen model worktree. The runner's `evaluation_commit` and installed `direct_url.json` record the actual evaluator pin.
+
+The final trained-model named-region API check is handled by parent job 581890; smoke checkpoints already passed named embeddings and availability checks. No source, training recipe or model weights were changed during this final read-only monitoring/audit.

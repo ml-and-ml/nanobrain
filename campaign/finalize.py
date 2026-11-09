@@ -101,13 +101,16 @@ def main():
         writer.writerow(["task", *[r["name"] for r in rows]])
         writer.writerows([t, *[r["tasks"][t]["score"] for r in rows]] for t in TASKS)
     lines = ["# Six anatomical-region experiment results", "",
-             "All six models completed full training and all 11 fixed open tasks. **Nothing was submitted to Labless.**", "",
+             "All six models completed full training and all 11 fixed open tasks on the dev split. **Nothing was submitted to Labless.**", "",
              "The three changes are independent: learned contextual regions with patch feedback; same-region masked-view consistency; regional visible-patch quotas. Each was applied separately to main and Ryan's pinned model. Both final region-token checkpoints also passed a real-input named-region API check, returning 21 finite 768-dimensional vectors with explicit availability masks.", "",
              "| Experiment | Open score | 95% bootstrap interval | Delta vs historical base | Train minutes | Steps |",
              "|---|---:|---|---:|---:|---:|"]
     for r in rows:
         lines.append(f"| {r['name']} | {r['open_score']:.6f} | {r['open_low']:.6f}–{r['open_high']:.6f} | {r['delta_vs_historical_reference']:+.6f} | {r['training_seconds']/60:.2f} | {r['training_steps']:,} |")
     lines += ["", "Main's historical reference is 0.472733; Ryan's is 0.549473. These are published single-seed references, not freshly rerun controls. The intervals are the evaluator's sample-bootstrap intervals; they do not measure training-seed variation or establish a significant gain over the historical reference. Scores are normalized task metrics, not accuracy percentages.", "",
+              "## Interpretation", "",
+              "Learned contextual region tokens achieved the highest point score among the three new variants on both bases. Main + regions scored 0.486434, up 0.013701 against historical main, and led 9 of 11 tasks among the main variants. It is the only arm above its historical reference. Ryan + regions was the best of the six at 0.534519, but all three Ryan variants fell below Ryan's historical 0.549473. Paired sample-bootstrap comparisons among the Ryan variants all include zero; the point ranking is not evidence of a reliable difference.", "",
+              "Coverage improved regional availability in the smoke check but did not improve the final aggregate. Under Ryan's fixed time budget it processed 436,064 image presentations versus consistency's 574,880, about 24% fewer. Better anatomical coverage therefore came with a substantial throughput cost in that implementation. The next experiment should compare region tokens against a freshly rerun unchanged base at matched seeds and wall time, while separately testing the named vectors' anatomical specificity and downstream usefulness. These follow-up experiments have not been run.", "",
               "## Per-task normalized scores", "",
               "| Task | " + " | ".join(r["name"] for r in rows) + " |",
               "|---|" + "---:|" * len(rows)]
@@ -125,6 +128,8 @@ def main():
               "- [Protocol and branch folders](../../campaign/README.md)",
               "- [Named contextual embedding API](../../campaign/REGION_EMBEDDINGS.md)",
               "- [Atlas source and geometry checks](../../campaign/atlas/README.md)",
+              "- [Main validation and task comparison](../../campaign/main_audit.md)",
+              "- [Ryan validation and paired comparisons](../../campaign/ryan_audit.md)",
               "- [Machine-readable scores and exact source/config provenance](six-experiment-results.json)",
               f"- Checkpoints and complete evaluation artifacts: `{MANIFEST['output_root']}/<experiment>/`", ""]
     (out / "six-experiment-results.md").write_text("\n".join(lines))

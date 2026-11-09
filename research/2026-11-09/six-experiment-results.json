@@ -1,0 +1,562 @@
+{
+  "finished_at": "2026-11-09T07:20:31.086657+00:00",
+  "evaluation_commit": "8ef7115d519a1d1f13910c1e13bcae331b0ca3ad",
+  "subset": "dev",
+  "training_seed": 7338,
+  "evaluation_seed": 0,
+  "submission": "disabled",
+  "results": [
+    {
+      "name": "main-regions",
+      "base": "main",
+      "change": "regions",
+      "base_commit": "440fc92a0f949c5874db64ec6491f397bcbda37c",
+      "reference_score": 0.47273299323282175,
+      "commit": "46715080735c5dda93ef2827f33296866d02d321",
+      "job_id": "581780",
+      "config_sha256": "9d5c432eea5c0454c5441ee04dc80aae6ee044689ec85fb9fba9832d0766a1ab",
+      "run_dir": "/data/hassan/nanobrain/anatomical-regions-20261109/main-regions",
+      "checkpoint": "/data/hassan/nanobrain/anatomical-regions-20261109/main-regions/checkpoint-last.pth",
+      "open_score": 0.48643448903088765,
+      "open_low": 0.4576093573644937,
+      "open_high": 0.5151635336445145,
+      "delta_vs_historical_reference": 0.013701495798065899,
+      "training_seconds": 3606.4023475319846,
+      "training_steps": 20364,
+      "image_presentations": 651648,
+      "num_params": 104153345,
+      "peak_memory_gb": 34.542281216,
+      "gpu": "NVIDIA H100 80GB HBM3",
+      "evaluation_seconds": 782.1643789939117,
+      "named_regions_checked": 21,
+      "tasks": {
+        "abide_diagnosis": {
+          "score": 0.04775789423092336,
+          "low": -0.05618721863535145,
+          "high": 0.14991188580400205,
+          "n_samples": 500
+        },
+        "adhd_diagnosis": {
+          "score": -0.13348626697253396,
+          "low": -0.2750325500651002,
+          "high": 0.005409510819021537,
+          "n_samples": 254
+        },
+        "cnp_diagnosis": {
+          "score": 0.24250675962733292,
+          "low": 0.09067427019407649,
+          "high": 0.3885060592665379,
+          "n_samples": 131
+        },
+        "ucsf_idh": {
+          "score": 0.6983908948194661,
+          "low": 0.5792631475667189,
+          "high": 0.805156004709576,
+          "n_samples": 248
+        },
+        "upenn_survival_1y": {
+          "score": 0.3126282909415439,
+          "low": 0.1850669344042839,
+          "high": 0.44257028112449803,
+          "n_samples": 301
+        },
+        "ixi_age": {
+          "score": 0.8282108822688006,
+          "low": 0.7923980316364762,
+          "high": 0.8564987596533176,
+          "n_samples": 281
+        },
+        "openbhb_age": {
+          "score": 0.8131907579702121,
+          "low": 0.7685001402242185,
+          "high": 0.8456126472482525,
+          "n_samples": 500
+        },
+        "brats_enhancing_tumor": {
+          "score": 0.6170499512337847,
+          "low": 0.5935357741025713,
+          "high": 0.6405291930589126,
+          "n_samples": 500
+        },
+        "soop_lesion": {
+          "score": 0.5663132247502508,
+          "low": 0.5375051531071695,
+          "high": 0.5951937297797151,
+          "n_samples": 500
+        },
+        "soop_mrs_poor": {
+          "score": 0.529592803030303,
+          "low": 0.43388819839015147,
+          "high": 0.6291060014204546,
+          "n_samples": 368
+        },
+        "brats_whole_tumor": {
+          "score": 0.8286241874396801,
+          "low": 0.8158596564464271,
+          "high": 0.8410189271993935,
+          "n_samples": 500
+        }
+      }
+    },
+    {
+      "name": "main-consistency",
+      "base": "main",
+      "change": "consistency",
+      "base_commit": "440fc92a0f949c5874db64ec6491f397bcbda37c",
+      "reference_score": 0.47273299323282175,
+      "commit": "130d1aabf04754bcbc39d9a37ef94df86a04c2a0",
+      "job_id": "581781",
+      "config_sha256": "bed19f9156927730fdbf3ed248a2750924f6054d0faeb850ab1857111ede6996",
+      "run_dir": "/data/hassan/nanobrain/anatomical-regions-20261109/main-consistency",
+      "checkpoint": "/data/hassan/nanobrain/anatomical-regions-20261109/main-consistency/checkpoint-last.pth",
+      "open_score": 0.4671135724768161,
+      "open_low": 0.43794035384948266,
+      "open_high": 0.4971893917879017,
+      "delta_vs_historical_reference": -0.005619420756005633,
+      "training_seconds": 3606.515033010044,
+      "training_steps": 20166,
+      "image_presentations": 645312,
+      "num_params": 98817280,
+      "peak_memory_gb": 33.953161728,
+      "gpu": "NVIDIA H100 80GB HBM3",
+      "evaluation_seconds": 1041.0655056801625,
+      "named_regions_checked": null,
+      "tasks": {
+        "abide_diagnosis": {
+          "score": 0.03135263301238411,
+          "low": -0.07483458562296733,
+          "high": 0.130779890738397,
+          "n_samples": 500
+        },
+        "adhd_diagnosis": {
+          "score": -0.15072230144460286,
+          "low": -0.2818215636431273,
+          "high": -0.01067022134044276,
+          "n_samples": 254
+        },
+        "cnp_diagnosis": {
+          "score": 0.1861659048356079,
+          "low": 0.02684744325788435,
+          "high": 0.3344129260335992,
+          "n_samples": 131
+        },
+        "ucsf_idh": {
+          "score": 0.6717032967032968,
+          "low": 0.539423076923077,
+          "high": 0.786901491365777,
+          "n_samples": 248
+        },
+        "upenn_survival_1y": {
+          "score": 0.2759482373940205,
+          "low": 0.14964078536367684,
+          "high": 0.40412092815707273,
+          "n_samples": 301
+        },
+        "ixi_age": {
+          "score": 0.8135346714608289,
+          "low": 0.770963950718342,
+          "high": 0.8503112437683539,
+          "n_samples": 281
+        },
+        "openbhb_age": {
+          "score": 0.8464861487982944,
+          "low": 0.8079376492653111,
+          "high": 0.873627841815183,
+          "n_samples": 500
+        },
+        "brats_enhancing_tumor": {
+          "score": 0.6035140579121653,
+          "low": 0.5803684412137896,
+          "high": 0.6275011132483429,
+          "n_samples": 500
+        },
+        "soop_lesion": {
+          "score": 0.5254790793480352,
+          "low": 0.4978449673888972,
+          "high": 0.5562301575245568,
+          "n_samples": 500
+        },
+        "soop_mrs_poor": {
+          "score": 0.5070430871212122,
+          "low": 0.40765565814393945,
+          "high": 0.6040482954545454,
+          "n_samples": 368
+        },
+        "brats_whole_tumor": {
+          "score": 0.8277444821037352,
+          "low": 0.8145673875657842,
+          "high": 0.839617095396202,
+          "n_samples": 500
+        }
+      }
+    },
+    {
+      "name": "main-coverage",
+      "base": "main",
+      "change": "coverage",
+      "base_commit": "440fc92a0f949c5874db64ec6491f397bcbda37c",
+      "reference_score": 0.47273299323282175,
+      "commit": "695148c74e9093554c0895c9d8b39820f8583791",
+      "job_id": "581782",
+      "config_sha256": "bb1eb4ad2044d09bf3d70b5844edde8321a0a099a8303c1ed3c8f3ef4619fdd8",
+      "run_dir": "/data/hassan/nanobrain/anatomical-regions-20261109/main-coverage",
+      "checkpoint": "/data/hassan/nanobrain/anatomical-regions-20261109/main-coverage/checkpoint-last.pth",
+      "open_score": 0.4612728164219384,
+      "open_low": 0.43279284498255793,
+      "open_high": 0.490942565992665,
+      "delta_vs_historical_reference": -0.011460176810883349,
+      "training_seconds": 3606.1760863182135,
+      "training_steps": 20443,
+      "image_presentations": 654176,
+      "num_params": 98817280,
+      "peak_memory_gb": 33.943527936,
+      "gpu": "NVIDIA H100 80GB HBM3",
+      "evaluation_seconds": 786.267204883974,
+      "named_regions_checked": null,
+      "tasks": {
+        "abide_diagnosis": {
+          "score": 0.014851247216392416,
+          "low": -0.08855877216873063,
+          "high": 0.11380108620772524,
+          "n_samples": 500
+        },
+        "adhd_diagnosis": {
+          "score": -0.17800235600471204,
+          "low": -0.3108221216442433,
+          "high": -0.04916299832599664,
+          "n_samples": 254
+        },
+        "cnp_diagnosis": {
+          "score": 0.16054162897993973,
+          "low": -0.0038513017281750794,
+          "high": 0.29994533643413823,
+          "n_samples": 131
+        },
+        "ucsf_idh": {
+          "score": 0.6609105180533752,
+          "low": 0.5244799843014128,
+          "high": 0.7822164442700157,
+          "n_samples": 248
+        },
+        "upenn_survival_1y": {
+          "score": 0.2927264614011602,
+          "low": 0.16169120928157077,
+          "high": 0.41821954484605084,
+          "n_samples": 301
+        },
+        "ixi_age": {
+          "score": 0.8319598258927094,
+          "low": 0.7978557532290868,
+          "high": 0.8595103366067394,
+          "n_samples": 281
+        },
+        "openbhb_age": {
+          "score": 0.8296871598834986,
+          "low": 0.7862522121139843,
+          "high": 0.8626580555811124,
+          "n_samples": 500
+        },
+        "brats_enhancing_tumor": {
+          "score": 0.5987503838939592,
+          "low": 0.5751972046866197,
+          "high": 0.6223703796412913,
+          "n_samples": 500
+        },
+        "soop_lesion": {
+          "score": 0.5570921875217464,
+          "low": 0.5299230270542671,
+          "high": 0.587348458169587,
+          "n_samples": 500
+        },
+        "soop_mrs_poor": {
+          "score": 0.4822443181818181,
+          "low": 0.38061967329545454,
+          "high": 0.58251953125,
+          "n_samples": 368
+        },
+        "brats_whole_tumor": {
+          "score": 0.8232396056214347,
+          "low": 0.8098432066345355,
+          "high": 0.8351834703825415,
+          "n_samples": 500
+        }
+      }
+    },
+    {
+      "name": "ryan-regions",
+      "base": "ryan",
+      "change": "regions",
+      "base_commit": "60df47644a9a74736daefa6ef9adbd4ea240dc8b",
+      "reference_score": 0.5494727418391886,
+      "commit": "f65cb9583236245ec54efd0b2c7e9be7f1a9439b",
+      "job_id": "581784",
+      "config_sha256": "8f1a455941b0f584c27d000c256f23f43a89cdcc157a8cf8ecda01bb61d96920",
+      "run_dir": "/data/hassan/nanobrain/anatomical-regions-20261109/ryan-regions",
+      "checkpoint": "/data/hassan/nanobrain/anatomical-regions-20261109/ryan-regions/checkpoint-last.pth",
+      "open_score": 0.5345191338415111,
+      "open_low": 0.5038269037965666,
+      "open_high": 0.5646303770770505,
+      "delta_vs_historical_reference": -0.014953607997677532,
+      "training_seconds": 3573.1891338179994,
+      "training_steps": 17187,
+      "image_presentations": 549984,
+      "num_params": 110200578,
+      "peak_memory_gb": 27.967627264,
+      "gpu": "NVIDIA H100 80GB HBM3",
+      "evaluation_seconds": 820.5909688529791,
+      "named_regions_checked": 21,
+      "tasks": {
+        "abide_diagnosis": {
+          "score": 0.13045707236578608,
+          "low": 0.026304490619843402,
+          "high": 0.22803553405213148,
+          "n_samples": 500
+        },
+        "adhd_diagnosis": {
+          "score": -0.05474610949221903,
+          "low": -0.1967325934651869,
+          "high": 0.0809349618699237,
+          "n_samples": 254
+        },
+        "cnp_diagnosis": {
+          "score": 0.28495404062644614,
+          "low": 0.13042043211341847,
+          "high": 0.4353599138723217,
+          "n_samples": 131
+        },
+        "ucsf_idh": {
+          "score": 0.7148744113029828,
+          "low": 0.5719878335949764,
+          "high": 0.8373381083202511,
+          "n_samples": 248
+        },
+        "upenn_survival_1y": {
+          "score": 0.263186077643909,
+          "low": 0.1338331102186525,
+          "high": 0.38689201249442207,
+          "n_samples": 301
+        },
+        "ixi_age": {
+          "score": 0.9129927952112824,
+          "low": 0.8931203715356416,
+          "high": 0.9279607339098083,
+          "n_samples": 281
+        },
+        "openbhb_age": {
+          "score": 0.9333044084175788,
+          "low": 0.9156167910382041,
+          "high": 0.9477730139923429,
+          "n_samples": 500
+        },
+        "brats_enhancing_tumor": {
+          "score": 0.7278590424497379,
+          "low": 0.7063165594544437,
+          "high": 0.7479831012309937,
+          "n_samples": 500
+        },
+        "soop_lesion": {
+          "score": 0.6300607414450496,
+          "low": 0.6055652583113872,
+          "high": 0.6559025454330725,
+          "n_samples": 500
+        },
+        "soop_mrs_poor": {
+          "score": 0.47910748106060597,
+          "low": 0.37377929687499994,
+          "high": 0.5857125946969697,
+          "n_samples": 368
+        },
+        "brats_whole_tumor": {
+          "score": 0.8576605112254619,
+          "low": 0.8460190558478237,
+          "high": 0.8675174150250852,
+          "n_samples": 500
+        }
+      }
+    },
+    {
+      "name": "ryan-consistency",
+      "base": "ryan",
+      "change": "consistency",
+      "base_commit": "60df47644a9a74736daefa6ef9adbd4ea240dc8b",
+      "reference_score": 0.5494727418391886,
+      "commit": "770c81ab6acb7a18c3149003542789667d08063a",
+      "job_id": "581785",
+      "config_sha256": "c9480245e5758c707080495a87d489970f4357c31179e80279a256970b042db5",
+      "run_dir": "/data/hassan/nanobrain/anatomical-regions-20261109/ryan-consistency",
+      "checkpoint": "/data/hassan/nanobrain/anatomical-regions-20261109/ryan-consistency/checkpoint-last.pth",
+      "open_score": 0.5323812047907105,
+      "open_low": 0.5030906751060158,
+      "open_high": 0.5621103419797561,
+      "delta_vs_historical_reference": -0.0170915370484781,
+      "training_seconds": 3572.925959416898,
+      "training_steps": 17965,
+      "image_presentations": 574880,
+      "num_params": 104864513,
+      "peak_memory_gb": 27.510907904,
+      "gpu": "NVIDIA H100 80GB HBM3",
+      "evaluation_seconds": 854.1818369281245,
+      "named_regions_checked": null,
+      "tasks": {
+        "abide_diagnosis": {
+          "score": 0.11639084253192133,
+          "low": 0.012009964914529322,
+          "high": 0.21516205001682187,
+          "n_samples": 500
+        },
+        "adhd_diagnosis": {
+          "score": -0.05673011346022694,
+          "low": -0.19624589249178495,
+          "high": 0.07834335668671344,
+          "n_samples": 254
+        },
+        "cnp_diagnosis": {
+          "score": 0.2469598824461967,
+          "low": 0.07909781474039827,
+          "high": 0.4036134969020138,
+          "n_samples": 131
+        },
+        "ucsf_idh": {
+          "score": 0.7566718995290425,
+          "low": 0.6283212323390894,
+          "high": 0.866763147566719,
+          "n_samples": 248
+        },
+        "upenn_survival_1y": {
+          "score": 0.25274431057563596,
+          "low": 0.12314814814814812,
+          "high": 0.37878848728246317,
+          "n_samples": 301
+        },
+        "ixi_age": {
+          "score": 0.9137743231158135,
+          "low": 0.894424783758788,
+          "high": 0.9290047862426757,
+          "n_samples": 281
+        },
+        "openbhb_age": {
+          "score": 0.935054623291381,
+          "low": 0.9182155336099513,
+          "high": 0.9484592435638897,
+          "n_samples": 500
+        },
+        "brats_enhancing_tumor": {
+          "score": 0.7325386712253094,
+          "low": 0.7113681984600612,
+          "high": 0.7533921622183639,
+          "n_samples": 500
+        },
+        "soop_lesion": {
+          "score": 0.6228356439844938,
+          "low": 0.5971497418937884,
+          "high": 0.6505906223838799,
+          "n_samples": 500
+        },
+        "soop_mrs_poor": {
+          "score": 0.4705255681818181,
+          "low": 0.36712831439393945,
+          "high": 0.57275390625,
+          "n_samples": 368
+        },
+        "brats_whole_tumor": {
+          "score": 0.8654276012764313,
+          "low": 0.853855880415556,
+          "high": 0.8748065577298985,
+          "n_samples": 500
+        }
+      }
+    },
+    {
+      "name": "ryan-coverage",
+      "base": "ryan",
+      "change": "coverage",
+      "base_commit": "60df47644a9a74736daefa6ef9adbd4ea240dc8b",
+      "reference_score": 0.5494727418391886,
+      "commit": "2f3db395ab71904ce2d7d2d900a7ac629d877a9d",
+      "job_id": "581787",
+      "config_sha256": "fd4b2bcc3f7c17ca5419f741923260403ba16070bb221839c27f138f112e808d",
+      "run_dir": "/data/hassan/nanobrain/anatomical-regions-20261109/ryan-coverage",
+      "checkpoint": "/data/hassan/nanobrain/anatomical-regions-20261109/ryan-coverage/checkpoint-last.pth",
+      "open_score": 0.5267439105104841,
+      "open_low": 0.4956952374836212,
+      "open_high": 0.5566324836716872,
+      "delta_vs_historical_reference": -0.022728831328704513,
+      "training_seconds": 3573.2219906109385,
+      "training_steps": 13627,
+      "image_presentations": 436064,
+      "num_params": 104864513,
+      "peak_memory_gb": 27.50246912,
+      "gpu": "NVIDIA H100 80GB HBM3",
+      "evaluation_seconds": 800.6873433570145,
+      "named_regions_checked": null,
+      "tasks": {
+        "abide_diagnosis": {
+          "score": 0.0797994200483827,
+          "low": -0.017865553757669937,
+          "high": 0.18672359377753564,
+          "n_samples": 500
+        },
+        "adhd_diagnosis": {
+          "score": -0.08996217992435984,
+          "low": -0.23306466612933227,
+          "high": 0.042380184760369595,
+          "n_samples": 254
+        },
+        "cnp_diagnosis": {
+          "score": 0.2818787817087196,
+          "low": 0.11880909919803107,
+          "high": 0.4324685489326478,
+          "n_samples": 131
+        },
+        "ucsf_idh": {
+          "score": 0.7405808477237048,
+          "low": 0.6014423076923077,
+          "high": 0.8550284536891679,
+          "n_samples": 248
+        },
+        "upenn_survival_1y": {
+          "score": 0.2547077197679608,
+          "low": 0.12849174475680505,
+          "high": 0.3813565372601517,
+          "n_samples": 301
+        },
+        "ixi_age": {
+          "score": 0.9115809806910231,
+          "low": 0.8924580815571407,
+          "high": 0.9268493064851837,
+          "n_samples": 281
+        },
+        "openbhb_age": {
+          "score": 0.9305235974286854,
+          "low": 0.9131035090827754,
+          "high": 0.94287158393785,
+          "n_samples": 500
+        },
+        "brats_enhancing_tumor": {
+          "score": 0.7222194283830468,
+          "low": 0.699257164187322,
+          "high": 0.7427760259278817,
+          "n_samples": 500
+        },
+        "soop_lesion": {
+          "score": 0.6270469700689427,
+          "low": 0.6017699396452749,
+          "high": 0.6542266639565467,
+          "n_samples": 500
+        },
+        "soop_mrs_poor": {
+          "score": 0.4795217803030303,
+          "low": 0.37788085937500004,
+          "high": 0.5839385061553031,
+          "n_samples": 368
+        },
+        "brats_whole_tumor": {
+          "score": 0.8562856694161892,
+          "low": 0.84445861620754,
+          "high": 0.8663130666762591,
+          "n_samples": 500
+        }
+      }
+    }
+  ]
+}

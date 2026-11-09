@@ -2,6 +2,8 @@
 
 User instruction: implement each of three proposals separately on upstream main and Ryan's pinned `fbc1-s7338`; obtain six evaluations; **do not submit anything to Labless until user review**.
 
+**Completed 2026-11-09:** all six full training runs and all 66 task evaluations finished. Both trained region-token checkpoints passed named/global/dense inference checks. See the [final scores, interpretation and provenance](../research/2026-11-09/six-experiment-results.md). Region tokens had the highest point score among the three variants on each base; only main + regions exceeded its historical reference. No submission was made.
+
 ## Isolated branches and directories
 
 Each folder is a Git worktree with its own experiment branch and full training configuration:
@@ -34,6 +36,7 @@ Each base retains its own full file list, architecture, optimizer, seed 7338 and
 3. `launch.py` accepts only clean, committed worktrees whose exact commits passed smoke checks, and queues the six one-GPU training/evaluation jobs.
 4. `run.py` evaluates the last checkpoint on all 11 fixed `open` tasks using pinned Brainmarks `8ef7115`. It does not modify the evaluator or enable the private test subset.
 5. `report.py` writes `results/results.md`, `.csv`, and `.json`. Full checkpoints, logs and individual task files live under `/data/hassan/nanobrain/anatomical-regions-20261109/`.
+6. `finalize.py` verifies all six complete runs, exact source/config provenance, the fixed task set and both final named-region checks, then freezes aggregate-only Markdown/CSV/JSON reports under `research/2026-11-09/`.
 
 The shared environment is `.venv/`; `environment.txt` records its packages. Each process uses its worktree's `src/` via `PYTHONPATH`. Its source snapshot and committed config identify the code actually trained.
 
